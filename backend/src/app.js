@@ -1,6 +1,7 @@
 import express from "express";
 import cors from "cors";
 import reservationRoutes from "./routes/reservationRoutes.js";
+import testRoutes from "./routes/testRoutes.js";
 
 const app = express();
 
@@ -12,5 +13,9 @@ app.get("/health", (req, res) => {
 });
 
 app.use("/reservations", reservationRoutes);
+
+if (process.env.NODE_ENV === "test") {
+  app.use("/test", testRoutes);
+}
 
 export default app;
