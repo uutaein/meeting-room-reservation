@@ -28,4 +28,16 @@ router.post("/", (req, res) => {
   }
 });
 
+router.get("/", async (req, res) => {
+  try {
+    const result = await listReservations(req.query);
+    return res.status(200).json(result);
+  } catch (error) {
+    return res.status(error.status || 500).json({
+      errorCode: error.errorCode || "ERR_INTERNAL_SERVER",
+      message: error.message
+    });
+  }
+});
+
 export default router;

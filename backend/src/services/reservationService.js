@@ -45,3 +45,9 @@ function throwProblem(status, code, message) {
   error.code = code;
   throw error;
 }
+
+async function listReservations(query) {
+  validateListReservationQuery(query);
+
+  return reservationRepository.findReservationsByDate(query.date);
+}

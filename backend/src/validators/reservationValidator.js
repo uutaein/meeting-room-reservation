@@ -147,6 +147,16 @@ function validateBusinessHours(startTime, endTime) {
   }
 }
 
+function validateListReservationQuery(query) {
+  if (!query.date) {
+    throwValidationError("ERR_REQUIRED_FIELD", "date is required");
+  }
+
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(query.date)) {
+    throwValidationError("ERR_DATE_FORMAT", "date must be YYYY-MM-DD");
+  }
+}
+
 function toMinutes(time) {
   const [hour, minute] = time.split(":").map(Number);
   return hour * 60 + minute;
@@ -166,3 +176,4 @@ function throwProblem(status, code, message) {
   error.code = code;
   throw error;
 }
+

@@ -124,10 +124,23 @@ export function existsOverlappingReservation(input) {
   return Boolean(row);
 }
 
-export function deleteAllReservations() {
-  const db = getDb();
+function findReservationsByDate(date) {
+  const stmt = db.prepare(`
+    SELECT
+      id,
+      room_id AS roomId,
+      reservation_date AS reservationDate,
+      start_time AS startTime,
+      end_time AS endTime,
+      owner_name AS ownerName,
+      attendees,
+      purpose,
+      status
+    FROM reservations
+    WHERE reservation_date = ?
+      AND status = 'ACTIVE'
+    ORDER BY start_time ASC, room_id ASC
+  `);
 
-  db.prepare(`
-    DELETE FROM reservations
-  `).run();
+  return stmt.all(date);
 }
