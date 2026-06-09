@@ -39,6 +39,22 @@ export function saveReservation(input) {
   return findReservationById(result.lastInsertRowid);
 }
 
+export function findRoomById(roomId) {
+  const db = getDb();
+
+  return db
+    .prepare(`
+      SELECT
+        id,
+        name,
+        capacity,
+        is_active
+      FROM rooms
+      WHERE id = ?
+    `)
+    .get(roomId);
+}
+
 export function findReservationById(id) {
   const db = getDb();
 
