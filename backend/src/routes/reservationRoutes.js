@@ -12,6 +12,13 @@ router.post("/", (req, res) => {
       .location(`/reservations/${reservation.id}`)
       .json(reservation);
   } catch (error) {
+    if (error.message === "ERR_RESERVATION_OVERLAP") {
+      return res.status(409).json({
+        code: "ERR_RESERVATION_OVERLAP",
+        message: "같은 회의실에 겹치는 예약이 이미 존재합니다."
+      });
+    }
+
     const status = error.status ?? 500;
 
     res.status(status).json({

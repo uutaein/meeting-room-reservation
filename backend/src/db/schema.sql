@@ -33,3 +33,22 @@ INSERT OR IGNORE INTO rooms (id, name, capacity, is_active)
 VALUES
   ('ROOM_1', '회의실 1', 6, 1),
   ('ROOM_2', '회의실 2', 12, 1);
+
+CREATE TRIGGER IF NOT EXISTS trg_reservation_no_overlap_insert
+BEFORE INSERT ON reservations
+WHEN NEW.status = 'ACTIVE'
+BEGIN
+  SELECT
+    CASE
+      WHEN EXISTS (
+        SELECT 1
+        FROM reservations r
+        WHERE r.room_id = NEW.room_id
+          AND r.reservation_date = NEW.reservation_date
+          AND r.status = 'ACTIVE'
+          AND NEW.start_time < r.end_time
+          AND NEW.end_time > r.start_time
+      )
+      THEN RAISE(ABORT, 'ERR_RESERVATION_OVERLAP')
+    END;
+END;

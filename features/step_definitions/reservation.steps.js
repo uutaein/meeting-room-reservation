@@ -49,6 +49,54 @@ Given(
   }
 );
 
+Given(
+  "{word} {int}에 {int}-{int}-{int} {int}:{int}부터 {int}:{int}까지 ACTIVE 예약이 있다",
+  async function (
+    roomType,
+    roomNumber,
+    year,
+    month,
+    day,
+    startHour,
+    startMinute,
+    endHour,
+    endMinute
+  ) {
+    const roomName = `${roomType} ${roomNumber}`;
+    const roomId = roomNameToId[roomName];
+
+    assert.ok(roomId, `알 수 없는 회의실입니다: ${roomName}`);
+
+    const requestBody = {
+      roomId,
+      reservationDate: `${year}-${pad(month)}-${pad(day)}`,
+      startTime: `${pad(startHour)}:${pad(startMinute)}`,
+      endTime: `${pad(endHour)}:${pad(endMinute)}`,
+      ownerName: "기존자",
+      attendees: 2,
+      purpose: "기존예약"
+    };
+
+    const response = await fetch(`${API_BASE_URL}/reservations`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json; charset=utf-8"
+      },
+      body: JSON.stringify(requestBody)
+    });
+
+    const responseBody = await response.json();
+
+    assert.strictEqual(
+      response.status,
+      201,
+      `기존 예약 생성 실패: ${JSON.stringify(responseBody)}`
+    );
+
+    this.existingReservation = responseBody;
+  }
+);
+
 When("사용자가 아래 정보로 예약을 생성한다", async function (dataTable) {
   const input = toObject(dataTable);
 
