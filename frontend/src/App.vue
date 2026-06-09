@@ -1,7 +1,7 @@
-<script setup>
-import HelloWorld from './components/HelloWorld.vue'
-</script>
-
 <template>
-  <HelloWorld />
+  <ReservationDashboard />
 </template>
+
+<script setup>
+import ReservationDashboard from "./components/ReservationDashboard.vue";
+</script>
