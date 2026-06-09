@@ -7,7 +7,7 @@
     "dev": "concurrently \"npm run dev --prefix backend\" \"npm run dev --prefix frontend\"",
     "dev:backend": "npm run dev --prefix backend",
     "dev:frontend": "npm run dev --prefix frontend",
-    "test:bdd": "cucumber-js features/**/*.feature"
+    "test:bdd": "cucumber-js features/**/*.feature --require features/step_definitions/**/*.js --format progress"
   },
   "devDependencies": {
     "@cucumber/cucumber": "^12.2.0",
