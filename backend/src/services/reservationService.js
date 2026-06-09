@@ -7,7 +7,9 @@ import {
   saveReservation,
   findRoomById,
   existsOverlappingReservation,
-  findReservationsByDate
+  findReservationsByDate,
+  findReservationById,
+  cancelReservationById
 } from "../repositories/reservationRepository.js";
 
 export function createReservation(input) {
@@ -60,4 +62,36 @@ function throwProblem(status, code, message) {
   error.code = code;
   error.errorCode = code;
   throw error;
+}
+
+export function cancelReservation(id) {
+  const reservationId = Number(id);
+
+  if (!Number.isInteger(reservationId) || reservationId < 1) {
+    throwProblem(
+      404,
+      "ERR_RESERVATION_NOT_FOUND",
+      "존재하지 않는 예약입니다."
+    );
+  }
+
+  const reservation = findReservationById(reservationId);
+
+  if (!reservation) {
+    throwProblem(
+      404,
+      "ERR_RESERVATION_NOT_FOUND",
+      "존재하지 않는 예약입니다."
+    );
+  }
+
+  if (reservation.status === "CANCELLED") {
+    throwProblem(
+      409,
+      "ERR_ALREADY_CANCELLED",
+      "이미 취소된 예약입니다."
+    );
+  }
+
+  return cancelReservationById(reservationId);
 }

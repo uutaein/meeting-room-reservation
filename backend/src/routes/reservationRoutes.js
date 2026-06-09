@@ -1,7 +1,8 @@
 import { Router } from "express";
 import {
   createReservation,
-  listReservations
+  listReservations,
+  cancelReservation
 } from "../services/reservationService.js";
 
 const router = Router();
@@ -38,6 +39,19 @@ router.get("/", (req, res) => {
     return res.status(200).json({
       reservations
     });
+  } catch (error) {
+    return res.status(error.status || 500).json({
+      errorCode: error.errorCode || error.code || "ERR_INTERNAL_SERVER",
+      message: error.message
+    });
+  }
+});
+
+router.patch("/:id/cancel", (req, res) => {
+  try {
+    const reservation = cancelReservation(req.params.id);
+
+    return res.status(200).json(reservation);
   } catch (error) {
     return res.status(error.status || 500).json({
       errorCode: error.errorCode || error.code || "ERR_INTERNAL_SERVER",

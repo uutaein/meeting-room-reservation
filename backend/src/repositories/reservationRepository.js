@@ -154,3 +154,24 @@ export function deleteAllReservations() {
 
   stmt.run();
 }
+
+// PATCH /reservations/{id}/cancel
+export function cancelReservationById(id) {
+  const db = getDb();
+
+  const result = db
+    .prepare(`
+      UPDATE reservations
+      SET
+        status = 'CANCELLED',
+        updated_at = CURRENT_TIMESTAMP
+      WHERE id = ?
+    `)
+    .run(id);
+
+  if (result.changes === 0) {
+    return null;
+  }
+
+  return findReservationById(id);
+}
