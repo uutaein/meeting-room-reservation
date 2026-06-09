@@ -144,3 +144,8 @@ function findReservationsByDate(date) {
 
   return stmt.all(date);
 }
+
+export function deleteAllReservations() {
+  const stmt = db.prepare("DELETE FROM reservations");
+  stmt.run();
+}
