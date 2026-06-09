@@ -8,7 +8,8 @@
     "dev:backend": "npm run dev --prefix backend",
     "dev:frontend": "npm run dev --prefix frontend",
     "test:bdd:create": "cucumber-js features/**/*.feature --tags @REQ-RSV-201 --require features/step_definitions/**/*.js --format progress",
-    "test:bdd:validation": "cucumber-js features/**/*.feature --tags \"@REQ-RSV-400-required or @REQ-RSV-400-owner-name or @REQ-RSV-400-purpose-required or @REQ-RSV-400-purpose-length or @REQ-RSV-400-time-unit or @REQ-RSV-400-time-order or @REQ-RSV-400-duration-max or @REQ-RSV-400-business-hours\" --require features/step_definitions/**/*.js --format progress"
+    "test:bdd:validation": "cucumber-js features/**/*.feature --tags \"@REQ-RSV-400-required or @REQ-RSV-400-owner-name or @REQ-RSV-400-purpose-required or @REQ-RSV-400-purpose-length or @REQ-RSV-400-time-unit or @REQ-RSV-400-time-order or @REQ-RSV-400-duration-max or @REQ-RSV-400-business-hours\" --require features/step_definitions/**/*.js --format progress",
+    "test:bdd:capacity": "cucumber-js features/**/*.feature --tags \"@REQ-RSV-400-capacity-room1 or @REQ-RSV-201-capacity-boundary-room1\" --require features/step_definitions/**/*.js --format progress"
   },
   "devDependencies": {
     "@cucumber/cucumber": "^12.2.0",
