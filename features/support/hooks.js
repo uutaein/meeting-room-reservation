@@ -1,13 +1,23 @@
 const { Before } = require("@cucumber/cucumber");
+const assert = require("assert");
 
-const API_BASE_URL = "http://localhost:3000";
+const BASE_URL = process.env.API_BASE_URL || "http://localhost:3000";
 
 Before(async function () {
-  const response = await fetch(`${API_BASE_URL}/test/reset`, {
+  const response = await fetch(`${BASE_URL}/test/reset`, {
     method: "POST"
   });
 
-  if (response.status !== 204) {
-    throw new Error(`테스트 DB 초기화 실패: status=${response.status}`);
+  let body = {};
+  try {
+    body = await response.json();
+  } catch (error) {
+    body = {};
   }
+
+  assert.strictEqual(
+    response.status,
+    200,
+    `/test/reset 실패: status=${response.status}, body=${JSON.stringify(body)}`
+  );
 });
