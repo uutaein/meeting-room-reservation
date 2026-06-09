@@ -99,3 +99,27 @@ function toReservation(row) {
     updatedAt: row.updated_at
   };
 }
+
+export function existsOverlappingReservation(input) {
+  const db = getDb();
+
+  const row = db
+    .prepare(`
+      SELECT 1
+      FROM reservations
+      WHERE room_id = @roomId
+        AND reservation_date = @reservationDate
+        AND status = 'ACTIVE'
+        AND @startTime < end_time
+        AND @endTime > start_time
+      LIMIT 1
+    `)
+    .get({
+      roomId: input.roomId,
+      reservationDate: input.reservationDate,
+      startTime: input.startTime,
+      endTime: input.endTime
+    });
+
+  return Boolean(row);
+}
