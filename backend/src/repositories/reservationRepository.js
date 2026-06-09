@@ -123,3 +123,11 @@ export function existsOverlappingReservation(input) {
 
   return Boolean(row);
 }
+
+export function deleteAllReservations() {
+  const db = getDb();
+
+  db.prepare(`
+    DELETE FROM reservations
+  `).run();
+}
