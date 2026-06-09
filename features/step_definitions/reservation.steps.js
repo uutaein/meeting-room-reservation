@@ -104,6 +104,24 @@ Then(
   }
 );
 
+Then("예약 생성은 실패해야 한다", function () {
+  assert.ok(
+    this.response.status >= 400,
+    `예약 생성이 실패해야 하지만 status=${this.response.status} 입니다.`
+  );
+});
+
+Then("오류 코드는 {string} 여야 한다", function (expectedCode) {
+  assert.strictEqual(this.responseBody.code, expectedCode);
+});
+
+Then("예약은 저장되지 않아야 한다", function () {
+  assert.ok(
+    this.response.status >= 400,
+    "예약 생성 실패 응답이어야 합니다."
+  );
+});
+
 function toObject(dataTable) {
   const rows = dataTable.raw();
   const result = {};
