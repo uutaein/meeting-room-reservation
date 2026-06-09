@@ -1,0 +1,24 @@
+# dependencies
+node_modules/
+**/node_modules/
+
+# SQLite runtime files
+backend/data/*.db
+backend/data/*.db-shm
+backend/data/*.db-wal
+backend/data/*.db-journal
+
+# frontend build output
+frontend/dist/
+
+# logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
