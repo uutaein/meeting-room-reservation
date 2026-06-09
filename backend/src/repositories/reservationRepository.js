@@ -124,7 +124,8 @@ export function existsOverlappingReservation(input) {
   return Boolean(row);
 }
 
-function findReservationsByDate(date) {
+export function findReservationsByDate(date) {
+  const db = getDb();
   const stmt = db.prepare(`
     SELECT
       id,
@@ -146,6 +147,10 @@ function findReservationsByDate(date) {
 }
 
 export function deleteAllReservations() {
-  const stmt = db.prepare("DELETE FROM reservations");
+  const db = getDb();
+  const stmt = db.prepare(`
+    DELETE FROM reservations
+  `);
+
   stmt.run();
 }

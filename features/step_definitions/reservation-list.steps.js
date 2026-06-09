@@ -60,13 +60,20 @@ When("사용자가 날짜 없이 예약 목록을 조회하면", async function 
 });
 
 Then("응답 상태코드는 200이어야 한다", function () {
-  assert.strictEqual(this.response.status, 200);
+  assert.strictEqual(
+    this.response.status,
+    200,
+    `응답 상태코드 불일치: status=${this.response.status}, body=${JSON.stringify(this.responseBody)}`
+  );
 });
 
 Then("응답 상태코드는 400이어야 한다", function () {
-  assert.strictEqual(this.response.status, 400);
+  assert.strictEqual(
+    this.response.status,
+    400,
+    `응답 상태코드 불일치: status=${this.response.status}, body=${JSON.stringify(this.responseBody)}`
+  );
 });
-
 Then("예약 목록은 2건이어야 한다", function () {
   const reservations = getReservationList(this.responseBody);
   assert.strictEqual(reservations.length, 2);

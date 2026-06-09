@@ -23,6 +23,24 @@ export function validateCreateReservation(input) {
   validateBusinessHours(input.startTime, input.endTime);
 }
 
+export function validateListReservationQuery(query) {
+  if (!query.date) {
+    throwProblem(
+      400,
+      "ERR_REQUIRED_FIELD",
+      "조회 날짜는 필수입니다."
+    );
+  }
+
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(query.date)) {
+    throwProblem(
+      400,
+      "ERR_DATE_FORMAT",
+      "조회 날짜는 YYYY-MM-DD 형식이어야 합니다."
+    );
+  }
+}
+
 function validateRequiredFields(input) {
   for (const field of REQUIRED_FIELDS) {
     if (
@@ -30,14 +48,22 @@ function validateRequiredFields(input) {
       input[field] === null ||
       String(input[field]).trim() === ""
     ) {
-      throwProblem(400, "ERR_REQUIRED_FIELD", "필수 입력값이 누락되었습니다.");
+      throwProblem(
+        400,
+        "ERR_REQUIRED_FIELD",
+        "필수 입력값이 누락되었습니다."
+      );
     }
   }
 }
 
 function validateRoomId(roomId) {
   if (!VALID_ROOM_IDS.includes(roomId)) {
-    throwProblem(400, "ERR_INVALID_ROOM", "존재하지 않는 회의실입니다.");
+    throwProblem(
+      400,
+      "ERR_INVALID_ROOM",
+      "존재하지 않는 회의실입니다."
+    );
   }
 }
 
@@ -67,7 +93,11 @@ function validatePurpose(purpose) {
 
 function validateAttendees(attendees) {
   if (!Number.isInteger(attendees)) {
-    throwProblem(400, "ERR_ATTENDEES_INVALID", "참석 인원은 정수여야 합니다.");
+    throwProblem(
+      400,
+      "ERR_ATTENDEES_INVALID",
+      "참석 인원은 정수여야 합니다."
+    );
   }
 
   if (attendees < 1 || attendees > 12) {
@@ -147,16 +177,6 @@ function validateBusinessHours(startTime, endTime) {
   }
 }
 
-function validateListReservationQuery(query) {
-  if (!query.date) {
-    throwValidationError("ERR_REQUIRED_FIELD", "date is required");
-  }
-
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(query.date)) {
-    throwValidationError("ERR_DATE_FORMAT", "date must be YYYY-MM-DD");
-  }
-}
-
 function toMinutes(time) {
   const [hour, minute] = time.split(":").map(Number);
   return hour * 60 + minute;
@@ -174,6 +194,6 @@ function throwProblem(status, code, message) {
   const error = new Error(message);
   error.status = status;
   error.code = code;
+  error.errorCode = code;
   throw error;
 }
-

@@ -1,5 +1,8 @@
 import { Router } from "express";
-import { createReservation } from "../services/reservationService.js";
+import {
+  createReservation,
+  listReservations
+} from "../services/reservationService.js";
 
 const router = Router();
 
@@ -28,13 +31,16 @@ router.post("/", (req, res) => {
   }
 });
 
-router.get("/", async (req, res) => {
+router.get("/", (req, res) => {
   try {
-    const result = await listReservations(req.query);
-    return res.status(200).json(result);
+    const reservations = listReservations(req.query);
+
+    return res.status(200).json({
+      reservations
+    });
   } catch (error) {
     return res.status(error.status || 500).json({
-      errorCode: error.errorCode || "ERR_INTERNAL_SERVER",
+      errorCode: error.errorCode || error.code || "ERR_INTERNAL_SERVER",
       message: error.message
     });
   }

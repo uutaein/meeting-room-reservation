@@ -8,11 +8,13 @@ Before(async function () {
     method: "POST"
   });
 
-  let body = {};
+  const text = await response.text();
+
+  let body;
   try {
-    body = await response.json();
+    body = JSON.parse(text);
   } catch (error) {
-    body = {};
+    body = text;
   }
 
   assert.strictEqual(

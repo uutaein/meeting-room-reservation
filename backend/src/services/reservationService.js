@@ -1,8 +1,13 @@
-import { validateCreateReservation } from "../validators/reservationValidator.js";
+import {
+  validateCreateReservation,
+  validateListReservationQuery
+} from "../validators/reservationValidator.js";
+
 import {
   saveReservation,
   findRoomById,
-  existsOverlappingReservation
+  existsOverlappingReservation,
+  findReservationsByDate
 } from "../repositories/reservationRepository.js";
 
 export function createReservation(input) {
@@ -13,11 +18,21 @@ export function createReservation(input) {
   return saveReservation(input);
 }
 
+export function listReservations(query) {
+  validateListReservationQuery(query);
+
+  return findReservationsByDate(query.date);
+}
+
 function validateRoomCapacity(roomId, attendees) {
   const room = findRoomById(roomId);
 
   if (!room || room.is_active !== 1) {
-    throwProblem(400, "ERR_INVALID_ROOM", "존재하지 않거나 사용할 수 없는 회의실입니다.");
+    throwProblem(
+      400,
+      "ERR_INVALID_ROOM",
+      "존재하지 않거나 사용할 수 없는 회의실입니다."
+    );
   }
 
   if (attendees > room.capacity) {
@@ -43,11 +58,6 @@ function throwProblem(status, code, message) {
   const error = new Error(message);
   error.status = status;
   error.code = code;
+  error.errorCode = code;
   throw error;
-}
-
-async function listReservations(query) {
-  validateListReservationQuery(query);
-
-  return reservationRepository.findReservationsByDate(query.date);
 }
