@@ -175,3 +175,65 @@ export function cancelReservationById(id) {
 
   return findReservationById(id);
 }
+
+// feature/reservation-update
+export function updateReservationById(id, input) {
+  const db = getDb();
+
+  const result = db
+    .prepare(`
+      UPDATE reservations
+      SET
+        room_id = ?,
+        reservation_date = ?,
+        start_time = ?,
+        end_time = ?,
+        owner_name = ?,
+        attendees = ?,
+        purpose = ?,
+        updated_at = CURRENT_TIMESTAMP
+      WHERE id = ?
+    `)
+    .run(
+      input.roomId,
+      input.reservationDate,
+      input.startTime,
+      input.endTime,
+      input.ownerName,
+      input.attendees,
+      input.purpose,
+      id
+    );
+
+  if (result.changes === 0) {
+    return null;
+  }
+
+  return findReservationById(id);
+}
+
+export function existsOverlappingReservationExceptSelf(id, input) {
+  const db = getDb();
+
+  const row = db
+    .prepare(`
+      SELECT 1
+      FROM reservations
+      WHERE id <> ?
+        AND room_id = ?
+        AND reservation_date = ?
+        AND status = 'ACTIVE'
+        AND ? < end_time
+        AND ? > start_time
+      LIMIT 1
+    `)
+    .get(
+      id,
+      input.roomId,
+      input.reservationDate,
+      input.startTime,
+      input.endTime
+    );
+
+  return Boolean(row);
+}

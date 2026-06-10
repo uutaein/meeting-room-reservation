@@ -173,6 +173,28 @@ Then("수정된 목적이 반환된다", function () {
   assert.equal(reservation.endTime, "11:00");
 });
 
+When("사용자가 자기 예약 시간을 일부 겹치게 변경한다", async function () {
+  await updateReservation(existingReservation.id, {
+    roomId: existingReservation.roomId,
+    reservationDate: existingReservation.reservationDate,
+    startTime: "10:30",
+    endTime: "11:30",
+    ownerName: existingReservation.ownerName,
+    attendees: existingReservation.attendees,
+    purpose: existingReservation.purpose
+  });
+});
+
+Then("수정된 시간이 반환된다", function () {
+  const reservation = getReservationFromBody(responseBody);
+
+  assert.equal(reservation.roomId, "ROOM_1");
+  assert.equal(reservation.reservationDate, "2026-06-15");
+  assert.equal(reservation.startTime, "10:30");
+  assert.equal(reservation.endTime, "11:30");
+  assert.equal(reservation.status, "ACTIVE");
+});
+
 async function createReservation(input) {
   const createResponse = await fetch(`${API_BASE_URL}/reservations`, {
     method: "POST",
