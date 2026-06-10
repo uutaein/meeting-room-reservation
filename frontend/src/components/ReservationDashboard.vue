@@ -24,6 +24,7 @@
           id="base-date"
           v-model="baseDate"
           type="date"
+          :disabled="loading || submitting"
           @change="loadReservations"
         />
       </div>
@@ -75,7 +76,9 @@
         </header>
 
         <div v-if="day.reservations.length === 0" class="empty">
-          예약 없음
+          <td colspan="6" class="empty-reservation">
+            예약이 없습니다.
+          </td>
         </div>
 
         <table v-else>
@@ -721,5 +724,30 @@ tbody tr:last-child td {
   justify-content: flex-end;
   gap: 8px;
   padding-top: 8px;
+}
+
+.action-cell {
+  text-align: center;
+  white-space: nowrap;
+}
+
+.cancel-button {
+  border: 1px solid #dc2626;
+  background: #fff;
+  color: #dc2626;
+  border-radius: 6px;
+  padding: 6px 10px;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.cancel-button:hover:not(:disabled) {
+  background: #dc2626;
+  color: #fff;
+}
+
+.cancel-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 </style>
