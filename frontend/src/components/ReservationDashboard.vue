@@ -27,7 +27,7 @@
 
     <section v-else>
       <ReservationDayList
-        :dailyReservations="dailyReservations"
+        :dailyReservations="previewDailyReservations"
         :loading="loading"
         :submitting="submitting"
         @edit-reservation="openUpdateModal"
@@ -119,6 +119,7 @@ import ReservationFilter from "./ReservationFilter.vue";
 import ReservationDayList from "./ReservationDayList.vue";
 import ReservationCreateModal from "./ReservationCreateModal.vue";
 import ReservationUpdateModal from "./ReservationUpdateModal.vue";
+import { applyReservationPreviewData } from "../dev/reservationPreviewData.js";
 
 const DEFAULT_BUSINESS_DAY_COUNT = 10;
 const today = toDateInputValue(new Date());
@@ -150,6 +151,10 @@ const periodRangeText = computed(() => {
 
   return `${firstDate} ~ ${lastDate}`;
 });
+
+const previewDailyReservations = computed(() =>
+  applyReservationPreviewData(dailyReservations.value)
+);
 
 const cancelConfirmMessage = computed(() => {
   const target = cancelTarget.value;
@@ -366,6 +371,13 @@ function showToast(message, type = "success") {
 .dashboard-top {
   margin-bottom: 14px;
   padding: 10px 0 8px;
+}
+
+@media (min-width: 900px) and (max-width: 1200px) and (min-height: 1200px) {
+  .dashboard-top {
+    scroll-snap-align: start;
+    scroll-snap-stop: normal;
+  }
 }
 
 .dashboard-header-simple {

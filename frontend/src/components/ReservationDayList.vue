@@ -62,7 +62,8 @@
             <button
               type="button"
               class="edit-button"
-              :disabled="loading || submitting"
+              :disabled="loading || submitting || reservation.isPreview"
+              :title="reservation.isPreview ? '가상 데이터입니다.' : ''"
               @click="$emit('edit-reservation', day, reservation)"
             >
               수정
@@ -70,7 +71,8 @@
             <button
               type="button"
               class="cancel-button"
-              :disabled="loading || submitting"
+              :disabled="loading || submitting || reservation.isPreview"
+              :title="reservation.isPreview ? '가상 데이터입니다.' : ''"
               @click="$emit('cancel-reservation', day, reservation)"
             >
               취소
@@ -430,6 +432,11 @@ function formatDateFriendly(dateStr) {
 }
 
 @media (min-width: 900px) and (max-width: 1200px) and (min-height: 1200px) {
+  .day-card {
+    scroll-snap-align: start;
+    scroll-snap-stop: normal;
+  }
+
   .day-list {
     gap: 20px;
   }
