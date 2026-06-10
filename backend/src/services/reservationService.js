@@ -9,7 +9,9 @@ import {
   existsOverlappingReservation,
   findReservationsByDate,
   findReservationById,
-  cancelReservationById
+  cancelReservationById,
+  updateReservationById,
+  existsOverlappingReservationExceptSelf
 } from "../repositories/reservationRepository.js";
 
 export function createReservation(input) {
@@ -94,4 +96,37 @@ export function cancelReservation(id) {
   }
 
   return cancelReservationById(reservationId);
+}
+
+// feature/reservation-update
+export function updateReservation(id, input) {
+  const existingReservation = findReservationById(id);
+
+  if (!existingReservation) {
+    const error = new Error("예약을 찾을 수 없습니다.");
+    error.statusCode = 404;
+    error.code = "ERR_RESERVATION_NOT_FOUND";
+    throw error;
+  }
+
+  if (existingReservation.status === "CANCELLED") {
+    const error = new Error("이미 취소된 예약은 수정할 수 없습니다.");
+    error.statusCode = 409;
+    error.code = "ERR_CANCELLED_RESERVATION_NOT_EDITABLE";
+    throw error;
+  }
+
+  validateReservationInput(input);
+  validateRoomCapacity(input);
+
+  const hasOverlap = existsOverlappingReservationExceptSelf(id, input);
+
+  if (hasOverlap) {
+    const error = new Error("이미 해당 시간에 예약이 존재합니다.");
+    error.statusCode = 409;
+    error.code = "ERR_RESERVATION_OVERLAP";
+    throw error;
+  }
+
+  return updateReservationById(id, input);
 }
