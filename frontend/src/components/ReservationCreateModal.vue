@@ -196,6 +196,15 @@ watch([endHour, endMinute], () => {
 
 const localError = ref("");
 
+const confirmedWarning = ref(false);
+
+watch(
+  () => [form.roomId, form.attendees],
+  () => {
+    confirmedWarning.value = false;
+  }
+);
+
 watch(
   () => props.isOpen,
   (newVal) => {
@@ -213,6 +222,7 @@ watch(
       form.purpose = "";
       form.contact = "";
       localError.value = "";
+      confirmedWarning.value = false;
     }
   },
   { immediate: true }
@@ -235,15 +245,27 @@ function adjustDate(direction) {
 }
 
 function handleSubmit() {
-  if (form.roomId === "ROOM_1" && form.attendees >= 6) {
-    alert("회의실을 선택해주세요");
-  }
   const contactClean = String(form.contact).trim();
   if (!/^[0-9-]+$/.test(contactClean)) {
     localError.value = "연락처는 숫자와 하이픈(-)만 입력할 수 있습니다.";
     return;
   }
+
+  const isRoom1Warn = form.roomId === "ROOM_1" && form.attendees >= 6;
+  const isRoom2Warn = form.roomId === "ROOM_2" && form.attendees <= 6;
+
+  if ((isRoom1Warn || isRoom2Warn) && !confirmedWarning.value) {
+    if (isRoom1Warn) {
+      alert("6명 이상이면 가급적 회의실을 이용해주세요");
+    } else {
+      alert("가급적 서고를 이용해주세요");
+    }
+    confirmedWarning.value = true;
+    return;
+  }
+
   localError.value = "";
+  confirmedWarning.value = false;
   emit("submit", { ...form });
 }
 </script>

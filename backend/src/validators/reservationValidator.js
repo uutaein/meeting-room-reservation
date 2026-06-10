@@ -5,7 +5,8 @@ const REQUIRED_FIELDS = [
   "endTime",
   "ownerName",
   "attendees",
-  "purpose"
+  "purpose",
+  "contact"
 ];
 
 const VALID_ROOM_IDS = ["ROOM_1", "ROOM_2"];
@@ -17,7 +18,6 @@ export function validateCreateReservation(input) {
   validatePurpose(input.purpose);
   validateAttendees(input.attendees);
   validateTimeFormat(input.startTime, input.endTime);
-  // validateTimeUnit(input.startTime, input.endTime);
   validateTimeOrder(input.startTime, input.endTime);
   validateDuration(input.startTime, input.endTime);
   validateBusinessHours(input.startTime, input.endTime);
@@ -130,7 +130,7 @@ function validateTimeUnit(startTime, endTime) {
     throwProblem(
       400,
       "ERR_TIME_UNIT",
-      "예약 시간은 30분 단위여야 합니다."
+      "예약 시간은 1분 단위여야 합니다."
     );
   }
 }
@@ -200,10 +200,16 @@ function throwProblem(status, code, message) {
 }
 
 function validateContact(contact) {
-  if (contact === undefined || contact === null || String(contact).trim() === "") {
-    return;
-  }
   const value = String(contact).trim();
+
+  if (value.length === 0) {
+    throwProblem(
+      400,
+      "ERR_REQUIRED_FIELD",
+      "필수 입력값이 누락되었습니다."
+    );
+  }
+
   if (!/^[0-9-]+$/.test(value)) {
     throwProblem(
       400,

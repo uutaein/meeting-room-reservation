@@ -16,7 +16,7 @@ import {
 
 export function createReservation(input) {
   validateCreateReservation(input);
-  validateRoomCapacity(input.roomId, input.attendees);
+  validateRoomExists(input.roomId);
   validateReservationOverlap(input);
 
   return saveReservation(input);
@@ -28,7 +28,7 @@ export function listReservations(query) {
   return findReservationsByDate(query.date);
 }
 
-function validateRoomCapacity(roomId, attendees) {
+function validateRoomExists(roomId) {
   const room = findRoomById(roomId);
 
   if (!room || room.is_active !== 1) {
@@ -36,14 +36,6 @@ function validateRoomCapacity(roomId, attendees) {
       400,
       "ERR_INVALID_ROOM",
       "존재하지 않거나 사용할 수 없는 회의실입니다."
-    );
-  }
-
-  if (attendees > room.capacity) {
-    throwProblem(
-      400,
-      "ERR_CAPACITY_EXCEEDED",
-      "참석 인원이 회의실 정원을 초과했습니다."
     );
   }
 }
@@ -117,7 +109,7 @@ export function updateReservation(id, input) {
   }
 
   validateCreateReservation(input);
-  validateRoomCapacity(input.roomId, input.attendees);
+  validateRoomExists(input.roomId);
 
   const hasOverlap = existsOverlappingReservationExceptSelf(id, input);
 

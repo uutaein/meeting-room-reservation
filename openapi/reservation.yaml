@@ -27,10 +27,9 @@ paths:
 
         비즈니스 규칙:
         - 예약 가능 시간은 08:00부터 20:00까지다.
-        - 예약은 30분 단위로만 가능하다.
+        - 예약은 1분 단위로 가능하다.
         - 1회 예약은 최대 2시간까지 가능하다.
-        - 회의실 1의 정원은 6명이다.
-        - 회의실 2의 정원은 12명이다.
+        - 회의실 1과 회의실 2의 정원은 권고 기준이다.
         - 같은 회의실의 기존 ACTIVE 예약과 시간이 겹치면 생성할 수 없다.
       operationId: createReservation
       requestBody:
@@ -76,20 +75,15 @@ paths:
                     code: ERR_REQUIRED_FIELD
                     message: 필수 입력값이 누락되었습니다.
                 invalidTimeUnit:
-                  summary: 30분 단위 위반
+                  summary: 1분 단위 위반
                   value:
                     code: ERR_TIME_UNIT
-                    message: 예약 시간은 30분 단위여야 합니다.
+                    message: 예약 시간은 1분 단위여야 합니다.
                 durationMax:
                   summary: 최대 예약 시간 초과
                   value:
                     code: ERR_DURATION_MAX
                     message: 1회 예약은 최대 2시간까지 가능합니다.
-                capacityExceeded:
-                  summary: 회의실 정원 초과
-                  value:
-                    code: ERR_CAPACITY_EXCEEDED
-                    message: 참석 인원이 회의실 정원을 초과했습니다.
         '409':
           description: 예약 충돌
           content:
@@ -265,6 +259,7 @@ components:
         - ownerName
         - attendees
         - purpose
+        - contact
       properties:
         roomId:
           type: string
@@ -280,12 +275,12 @@ components:
           example: '2026-06-10'
         startTime:
           type: string
-          description: 예약 시작 시간. 30분 단위여야 한다.
+          description: 예약 시작 시간. 1분 단위로 입력할 수 있다.
           pattern: '^([01][0-9]|2[0-3]):[0-5][0-9]$'
           example: '09:00'
         endTime:
           type: string
-          description: 예약 종료 시간. 30분 단위여야 한다.
+          description: 예약 종료 시간. 1분 단위로 입력할 수 있다.
           pattern: '^([01][0-9]|2[0-3]):[0-5][0-9]$'
           example: '10:00'
         ownerName:
@@ -296,9 +291,8 @@ components:
           example: 김철수
         attendees:
           type: integer
-          description: 참석 인원. 회의실 정원을 초과할 수 없다.
+          description: 참석 인원. 회의실 정원은 권고 기준이다.
           minimum: 1
-          maximum: 12
           example: 4
         purpose:
           type: string
@@ -308,7 +302,7 @@ components:
           example: 주간회의
         contact:
           type: string
-          description: 연락처. 숫자와 하이픈만 허용.
+          description: 연락처. 숫자와 하이픈만 허용하며 필수이다.
           example: '123-4567'
 
     Reservation:
@@ -323,6 +317,7 @@ components:
         - ownerName
         - attendees
         - purpose
+        - contact
         - status
         - createdAt
         - updatedAt
