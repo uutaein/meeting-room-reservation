@@ -103,13 +103,8 @@
               <td>{{ reservation.attendees }}명</td>
               <td>{{ reservation.purpose }}</td>
                 <td>
-                <button
-                  type="button"
-                  class="cancel-button"
-                  @click="handleCancelReservation(day, reservation)"
-                >
-                  취소
-                </button>
+                <button type="button" class="update-button" @click="openUpdateModal(reservation)">수정</button>
+                <button type="button" class="cancel-button" @click="handleCancelReservation(day, reservation)">취소</button>
               </td>
             </tr>
           </tbody>
@@ -240,6 +235,48 @@
         </form>
       </section>
     </div>
+    <!-- 예약 수정 feature/vue-reservation-update -->
+    <div
+      v-if="isUpdateModalOpen"
+      class="modal-backdrop"
+      @click.self="closeUpdateModal"
+    >
+      <section class="modal">
+        <header class="modal-header">
+          <h2>회의실 예약 수정</h2>
+          <button
+            class="icon-button"
+            type="button"
+            aria-label="예약 수정 창 닫기"
+            @click="closeUpdateModal"
+          >
+            ×
+          </button>
+        </header>
+
+        <div class="reservation-form">
+          <p>선택한 예약 ID: {{ updateForm.id }}</p>
+
+          <div class="modal-actions">
+            <button
+              class="secondary-button"
+              type="button"
+              @click="closeUpdateModal"
+            >
+              취소
+            </button>
+
+            <button
+              class="primary-button"
+              type="button"
+              @click="console.log(updateForm)"
+            >
+              저장
+            </button>
+          </div>
+        </div>
+      </section>
+    </div>
   </main>
 </template>
 
@@ -264,6 +301,8 @@ const errorMessage = ref("");
 const formErrorMessage = ref("");
 const successMessage = ref("");
 const isCreateModalOpen = ref(false);
+const isUpdateModalOpen = ref(false)
+const selectedReservation = ref(null)
 
 const form = reactive({
   roomId: "ROOM_1",
@@ -274,6 +313,17 @@ const form = reactive({
   attendees: 1,
   purpose: ""
 });
+
+const updateForm = ref({
+  id: null,
+  roomId: '',
+  reservationDate: '',
+  startTime: '',
+  endTime: '',
+  ownerName: '',
+  attendees: 1,
+  purpose: '',
+})
 
 const periodRangeText = computed(() => {
   if (dailyReservations.value.length === 0) {
@@ -466,6 +516,25 @@ async function handleCancelReservation(day, reservation) {
   } finally {
     loading.value = false;
   }
+}
+
+// feature/vue-reservation-update
+function openUpdateModal(reservation) {
+  updateForm.value = {
+    id: reservation.id,
+    roomId: reservation.roomId,
+    reservationDate: reservation.reservationDate ?? reservation.date ?? '',
+    startTime: reservation.startTime,
+    endTime: reservation.endTime,
+    ownerName: reservation.ownerName,
+    attendees: reservation.attendees,
+    purpose: reservation.purpose,
+  }
+
+  isUpdateModalOpen.value = true
+}
+function closeUpdateModal() {
+  isUpdateModalOpen.value = false
 }
 
 </script>
@@ -729,6 +798,17 @@ tbody tr:last-child td {
 .action-cell {
   text-align: center;
   white-space: nowrap;
+}
+
+.update-button {
+  border: 1px solid #2563eb;
+  background: #fff;
+  color: #2563eb;
+  border-radius: 6px;
+  padding: 6px 10px;
+  font-size: 13px;
+  cursor: pointer;
+  margin-right: 6px;
 }
 
 .cancel-button {
