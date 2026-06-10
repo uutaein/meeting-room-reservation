@@ -26,26 +26,32 @@
           :key="reservation.id"
           class="reservation-row-card"
         >
+          <!-- 1. 회의실 장소 (크게, 가운데 정렬) -->
+          <div class="reservation-room-column">
+            <span :class="['room-badge-huge', reservation.roomId.toLowerCase()]">
+              {{ getRoomName(reservation.roomId) }}
+            </span>
+          </div>
+
+          <!-- 2. 핵심 정보 -->
           <div class="reservation-details">
             <!-- 1순위: 목적 -->
             <div class="info-purpose" :title="reservation.purpose">
               {{ reservation.purpose }}
             </div>
             
-            <!-- 2, 3순위 및 회의실 명칭 -->
+            <!-- 2, 3순위 -->
             <div class="info-meta">
               <span class="meta-time">⏰ {{ reservation.startTime }} ~ {{ reservation.endTime }}</span>
               <span class="meta-owner">👤 {{ reservation.ownerName }}</span>
-              <span :class="['room-badge', reservation.roomId.toLowerCase()]">
-                {{ getRoomName(reservation.roomId) }}
-              </span>
             </div>
           </div>
 
-          <div class="reservation-actions">
+          <!-- 3. 관리 액션 (수정/취소 위아래 배치, 크기 축소) -->
+          <div class="reservation-actions-vertical">
             <button
               type="button"
-              class="edit-button"
+              class="edit-button-mini"
               :disabled="loading || submitting"
               @click="$emit('edit-reservation', day, reservation)"
             >
@@ -53,7 +59,7 @@
             </button>
             <button
               type="button"
-              class="cancel-button"
+              class="cancel-button-mini"
               :disabled="loading || submitting"
               @click="$emit('cancel-reservation', day, reservation)"
             >
@@ -233,71 +239,83 @@ function formatDateFriendly(dateStr) {
   color: var(--text-h);
 }
 
-.room-badge {
-  display: inline-block;
-  padding: 4px 10px;
-  border-radius: 8px;
-  font-size: 13px;
-  font-weight: 700;
+.reservation-room-column {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 100px;
 }
 
-.room-badge.room_1 {
+.room-badge-huge {
+  display: inline-block;
+  padding: 8px 14px;
+  border-radius: 10px;
+  font-size: 16px;
+  font-weight: 800;
+  text-align: center;
+  width: 100%;
+}
+
+.room-badge-huge.room_1 {
   background: hsla(200, 85%, 60%, 0.1);
   color: hsl(200, 85%, 40%);
   border: 2px solid hsla(200, 85%, 60%, 0.3);
 }
 
-.room-badge.room_2 {
+.room-badge-huge.room_2 {
   background: hsla(275, 85%, 60%, 0.1);
   color: hsl(275, 85%, 40%);
   border: 2px solid hsla(275, 85%, 60%, 0.3);
 }
 
-.reservation-actions {
+.reservation-actions-vertical {
   display: flex;
-  align-items: center;
-  gap: 8px;
+  flex-direction: column;
+  gap: 6px;
   flex-shrink: 0;
 }
 
-.edit-button,
-.cancel-button {
-  border-radius: 10px;
-  padding: 8px 16px;
-  font-size: 15px;
+.edit-button-mini,
+.cancel-button-mini {
+  border-radius: 8px;
+  padding: 6px 14px;
+  font-size: 14px;
   font-weight: 700;
   cursor: pointer;
+  width: 64px;
+  text-align: center;
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.edit-button {
+.edit-button-mini {
   border: 2px solid var(--accent-border);
   background: transparent;
   color: var(--accent);
 }
 
-.edit-button:hover:not(:disabled) {
+.edit-button-mini:hover:not(:disabled) {
   background: var(--accent);
   border-color: var(--accent);
   color: #fff;
   transform: translateY(-1px);
 }
 
-.cancel-button {
+.cancel-button-mini {
   border: 2px solid hsla(0, 80%, 60%, 0.4);
   background: transparent;
   color: hsl(0, 80%, 50%);
 }
 
-.cancel-button:hover:not(:disabled) {
+.cancel-button-mini:hover:not(:disabled) {
   background: hsl(0, 80%, 50%);
   border-color: hsl(0, 80%, 50%);
   color: #fff;
   transform: translateY(-1px);
 }
 
-.edit-button:disabled,
-.cancel-button:disabled {
+.edit-button-mini:disabled,
+.cancel-button-mini:disabled {
   opacity: 0.4;
   cursor: not-allowed;
 }
