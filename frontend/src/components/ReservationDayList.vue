@@ -92,11 +92,11 @@ defineEmits(["edit-reservation", "cancel-reservation"]);
 
 function getRoomName(roomId) {
   if (roomId === "ROOM_1") {
-    return "회의실 1";
+    return "서고";
   }
 
   if (roomId === "ROOM_2") {
-    return "회의실 2";
+    return "회의실";
   }
 
   return roomId;

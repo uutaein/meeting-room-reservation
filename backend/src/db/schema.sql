@@ -29,10 +29,10 @@ CREATE TABLE IF NOT EXISTS reservations (
 CREATE INDEX IF NOT EXISTS idx_reservations_date_room_time
 ON reservations (reservation_date, room_id, start_time, end_time);
 
-INSERT OR IGNORE INTO rooms (id, name, capacity, is_active)
+INSERT OR REPLACE INTO rooms (id, name, capacity, is_active)
 VALUES
-  ('ROOM_1', '회의실 1', 6, 1),
-  ('ROOM_2', '회의실 2', 12, 1);
+  ('ROOM_1', '서고', 6, 1),
+  ('ROOM_2', '회의실', 12, 1);
 
 DROP TRIGGER IF EXISTS trg_reservation_no_overlap_insert;
 CREATE TRIGGER trg_reservation_no_overlap_insert

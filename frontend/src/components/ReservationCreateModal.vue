@@ -23,20 +23,24 @@
           <div class="form-field">
             <label for="room-id">회의실</label>
             <select id="room-id" v-model="form.roomId" required :disabled="submitting">
-              <option value="ROOM_1">회의실 1 / 6명</option>
-              <option value="ROOM_2">회의실 2 / 12명</option>
+              <option value="ROOM_1">서고 / 6명</option>
+              <option value="ROOM_2">회의실 / 12명</option>
             </select>
           </div>
 
           <div class="form-field">
             <label for="reservation-date">예약일</label>
-            <input
-              id="reservation-date"
-              v-model="form.reservationDate"
-              type="date"
-              required
-              :disabled="submitting"
-            />
+            <div class="date-adjuster">
+              <button type="button" class="adjust-btn" @click="adjustDate(-1)" :disabled="submitting">◀ 하루 전</button>
+              <input
+                id="reservation-date"
+                v-model="form.reservationDate"
+                type="date"
+                required
+                :disabled="submitting"
+              />
+              <button type="button" class="adjust-btn" @click="adjustDate(1)" :disabled="submitting">하루 후 ▶</button>
+            </div>
           </div>
 
           <div class="form-field">
@@ -56,30 +60,16 @@
         <div class="form-row">
           <div class="form-field">
             <label for="start-time">시작 시간</label>
-            <input
-              id="start-time"
-              v-model="form.startTime"
-              type="time"
-              min="08:00"
-              max="20:00"
-              step="1800"
-              required
-              :disabled="submitting"
-            />
+            <select id="start-time" v-model="form.startTime" required :disabled="submitting">
+              <option v-for="t in timeOptions" :key="t" :value="t">{{ formatTimeLabel(t) }}</option>
+            </select>
           </div>
 
           <div class="form-field">
             <label for="end-time">종료 시간</label>
-            <input
-              id="end-time"
-              v-model="form.endTime"
-              type="time"
-              min="08:00"
-              max="20:00"
-              step="1800"
-              required
-              :disabled="submitting"
-            />
+            <select id="end-time" v-model="form.endTime" required :disabled="submitting">
+              <option v-for="t in timeOptions" :key="t" :value="t">{{ formatTimeLabel(t) }}</option>
+            </select>
           </div>
 
           <div class="form-field">
@@ -165,6 +155,13 @@ const form = reactive({
   purpose: ""
 });
 
+const timeOptions = [
+  "08:00", "08:30", "09:00", "09:30", "10:00", "10:30",
+  "11:00", "11:30", "12:00", "12:30", "13:00", "13:30",
+  "14:00", "14:30", "15:00", "15:30", "16:00", "16:30",
+  "17:00", "17:30", "18:00", "18:30", "19:00", "19:30", "20:00"
+];
+
 watch(
   () => props.isOpen,
   (newVal) => {
@@ -180,6 +177,30 @@ watch(
   },
   { immediate: true }
 );
+
+function formatTimeLabel(t) {
+  const [h, m] = t.split(":");
+  const ampm = Number(h) < 12 ? "오전" : "오후";
+  const hour12 = Number(h) === 12 ? 12 : Number(h) % 12;
+  const hourStr = String(hour12).padStart(2, "0");
+  return `${ampm} ${hourStr}시 ${m === "00" ? "00분" : "30분"}`;
+}
+
+function adjustDate(direction) {
+  if (!form.reservationDate) return;
+  const [y, m, d] = form.reservationDate.split("-").map(Number);
+  const date = new Date(y, m - 1, d);
+
+  do {
+    date.setDate(date.getDate() + direction);
+  } while (date.getDay() === 0 || date.getDay() === 6);
+
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+
+  form.reservationDate = `${year}-${month}-${day}`;
+}
 
 function handleSubmit() {
   emit("submit", { ...form });
@@ -367,5 +388,33 @@ function handleSubmit() {
   opacity: 0.4;
   transform: none;
   box-shadow: none;
+}
+
+.date-adjuster {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.adjust-btn {
+  padding: 12px 16px;
+  font-size: 16px;
+  font-weight: 700;
+  border: 2px solid var(--border);
+  background: var(--bg);
+  color: var(--text-h);
+  border-radius: 12px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s;
+}
+
+.adjust-btn:hover:not(:disabled) {
+  background: var(--border);
+}
+
+.adjust-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
 }
 </style>

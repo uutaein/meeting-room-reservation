@@ -143,7 +143,7 @@ async function handleCreateSubmit(formData) {
     await createReservation(formData);
 
     successMessage.value = "예약이 등록되었습니다.";
-    baseDate.value = formData.reservationDate;
+    baseDate.value = today;
     isCreateModalOpen.value = false;
 
     await loadReservations();
@@ -258,11 +258,11 @@ function toDateInputValue(date) {
 
 function getRoomName(roomId) {
   if (roomId === "ROOM_1") {
-    return "회의실 1";
+    return "서고";
   }
 
   if (roomId === "ROOM_2") {
-    return "회의실 2";
+    return "회의실";
   }
 
   return roomId;
