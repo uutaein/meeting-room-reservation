@@ -1,3 +1,4 @@
+@REQ-RSV-UPDATE
 Feature: 예약 수정
   사용자는 기존 ACTIVE 예약을 수정할 수 있다.
 
