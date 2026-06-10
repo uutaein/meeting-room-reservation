@@ -74,39 +74,75 @@ function onBusinessDayCountChange(event) {
 <style scoped>
 .filter {
   display: flex;
-  gap: 16px;
+  gap: 20px;
   align-items: flex-end;
-  margin-bottom: 16px;
+  margin-bottom: 20px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 20px;
+  box-shadow: var(--shadow-sm);
+  backdrop-filter: blur(8px);
+}
+
+.filter-item {
+  flex: 1;
 }
 
 .filter-item label {
   display: block;
   margin-bottom: 8px;
   font-weight: 700;
+  font-size: 18px;
+  color: var(--text-h);
 }
 
 .filter-item input,
 .filter-item select {
-  padding: 8px;
-  font-size: 16px;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 12px 16px;
+  font-size: 18px;
+  font-weight: 600;
+  border: 2px solid var(--border);
+  border-radius: 12px;
+  background: var(--bg);
+  color: var(--text-h);
+  transition: border-color 0.2s, box-shadow 0.2s;
+  outline: none;
+}
+
+.filter-item input:focus,
+.filter-item select:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-bg);
 }
 
 .period-summary {
   display: flex;
-  gap: 12px;
+  gap: 16px;
   align-items: center;
   margin-bottom: 24px;
-  padding: 12px 16px;
-  border: 1px solid #ddd;
-  background: #fafafa;
+  padding: 16px 24px;
+  border-radius: 14px;
+  background: var(--accent-bg);
+  border: 2px solid var(--accent-border);
+  color: var(--text-h);
+  font-size: 18px;
+}
+
+.period-summary strong {
+  font-weight: 700;
+  color: var(--accent);
 }
 
 .summary-count {
-  padding: 4px 10px;
+  padding: 6px 14px;
   border-radius: 999px;
-  background: #fff;
-  border: 1px solid #ddd;
-  font-size: 13px;
+  background: var(--bg);
+  border: 2px solid var(--accent-border);
+  font-size: 15px;
   font-weight: 700;
+  color: var(--accent);
 }
 </style>
