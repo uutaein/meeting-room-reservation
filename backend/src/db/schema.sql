@@ -34,7 +34,8 @@ VALUES
   ('ROOM_1', '회의실 1', 6, 1),
   ('ROOM_2', '회의실 2', 12, 1);
 
-CREATE TRIGGER IF NOT EXISTS trg_reservation_no_overlap_insert
+DROP TRIGGER IF EXISTS trg_reservation_no_overlap_insert;
+CREATE TRIGGER trg_reservation_no_overlap_insert
 BEFORE INSERT ON reservations
 WHEN NEW.status = 'ACTIVE'
 BEGIN
@@ -51,4 +52,28 @@ BEGIN
       )
       THEN RAISE(ABORT, 'ERR_RESERVATION_OVERLAP')
     END;
+END;
+-- feature/reservation-update
+DROP TRIGGER IF EXISTS prevent_overlap_update;
+CREATE TRIGGER prevent_overlap_update
+BEFORE UPDATE
+ON reservations
+WHEN NEW.status = 'ACTIVE'
+BEGIN
+
+  SELECT
+    CASE
+      WHEN EXISTS (
+        SELECT 1
+        FROM reservations
+        WHERE id <> NEW.id
+          AND room_id = NEW.room_id
+          AND reservation_date = NEW.reservation_date
+          AND status = 'ACTIVE'
+          AND NEW.start_time < end_time
+          AND NEW.end_time > start_time
+      )
+      THEN RAISE(ABORT, 'ERR_RESERVATION_OVERLAP')
+    END;
+
 END;
