@@ -86,7 +86,6 @@
               <th>예약자</th>
               <th>인원</th>
               <th>목적</th>
-              <th>상태</th>
               <th>관리</th>
             </tr>
           </thead>
@@ -100,7 +99,6 @@
               <td>{{ reservation.ownerName }}</td>
               <td>{{ reservation.attendees }}명</td>
               <td>{{ reservation.purpose }}</td>
-              <td>{{ reservation.status }}</td>
                 <td>
                 <button
                   type="button"
