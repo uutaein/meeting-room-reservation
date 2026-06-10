@@ -23,8 +23,8 @@
           <div class="form-field">
             <label for="room-id">회의실</label>
             <select id="room-id" v-model="form.roomId" required :disabled="submitting">
-              <option value="ROOM_1">서고 / 6명</option>
-              <option value="ROOM_2">회의실 / 12명</option>
+              <option value="ROOM_1">서고</option>
+              <option value="ROOM_2">회의실</option>
             </select>
           </div>
 
@@ -60,16 +60,26 @@
         <div class="form-row">
           <div class="form-field">
             <label for="start-time">시작 시간</label>
-            <select id="start-time" v-model="form.startTime" required :disabled="submitting">
-              <option v-for="t in timeOptions" :key="t" :value="t">{{ formatTimeLabel(t) }}</option>
-            </select>
+            <div class="time-picker-custom">
+              <select v-model="startHour" class="time-select" :disabled="submitting">
+                <option v-for="h in hours" :key="h" :value="h">{{ h }}시</option>
+              </select>
+              <select v-model="startMinute" class="time-select" :disabled="submitting">
+                <option v-for="m in minutes" :key="m" :value="m">{{ m }}분</option>
+              </select>
+            </div>
           </div>
 
           <div class="form-field">
             <label for="end-time">종료 시간</label>
-            <select id="end-time" v-model="form.endTime" required :disabled="submitting">
-              <option v-for="t in timeOptions" :key="t" :value="t">{{ formatTimeLabel(t) }}</option>
-            </select>
+            <div class="time-picker-custom">
+              <select v-model="endHour" class="time-select" :disabled="submitting">
+                <option v-for="h in hours" :key="h" :value="h">{{ h }}시</option>
+              </select>
+              <select v-model="endMinute" class="time-select" :disabled="submitting">
+                <option v-for="m in minutes" :key="m" :value="m">{{ m }}분</option>
+              </select>
+            </div>
           </div>
 
           <div class="form-field">
@@ -98,8 +108,8 @@
           />
         </div>
 
-        <p v-if="errorMessage" class="error">
-          {{ errorMessage }}
+        <p v-if="errorMessage || localError" class="error">
+          {{ errorMessage || localError }}
         </p>
 
         <div class="modal-actions">
@@ -122,7 +132,7 @@
 </template>
 
 <script setup>
-import { reactive, watch } from "vue";
+import { reactive, watch, ref } from "vue";
 
 const props = defineProps({
   isOpen: {
@@ -155,12 +165,23 @@ const form = reactive({
   purpose: ""
 });
 
-const timeOptions = [
-  "08:00", "08:30", "09:00", "09:30", "10:00", "10:30",
-  "11:00", "11:30", "12:00", "12:30", "13:00", "13:30",
-  "14:00", "14:30", "15:00", "15:30", "16:00", "16:30",
-  "17:00", "17:30", "18:00", "18:30", "19:00", "19:30", "20:00"
-];
+const hours = Array.from({ length: 13 }, (_, i) => String(i + 8).padStart(2, "0"));
+const minutes = Array.from({ length: 60 }, (_, i) => String(i).padStart(2, "0"));
+
+const startHour = ref("10");
+const startMinute = ref("00");
+const endHour = ref("11");
+const endMinute = ref("00");
+
+watch([startHour, startMinute], () => {
+  form.startTime = `${startHour.value}:${startMinute.value}`;
+});
+
+watch([endHour, endMinute], () => {
+  form.endTime = `${endHour.value}:${endMinute.value}`;
+});
+
+const localError = ref("");
 
 watch(
   () => props.isOpen,
@@ -170,21 +191,18 @@ watch(
       form.reservationDate = props.baseDate;
       form.startTime = "10:00";
       form.endTime = "11:00";
+      startHour.value = "10";
+      startMinute.value = "00";
+      endHour.value = "11";
+      endMinute.value = "00";
       form.ownerName = "";
       form.attendees = 1;
       form.purpose = "";
+      localError.value = "";
     }
   },
   { immediate: true }
 );
-
-function formatTimeLabel(t) {
-  const [h, m] = t.split(":");
-  const ampm = Number(h) < 12 ? "오전" : "오후";
-  const hour12 = Number(h) === 12 ? 12 : Number(h) % 12;
-  const hourStr = String(hour12).padStart(2, "0");
-  return `${ampm} ${hourStr}시 ${m === "00" ? "00분" : "30분"}`;
-}
 
 function adjustDate(direction) {
   if (!form.reservationDate) return;
@@ -203,6 +221,11 @@ function adjustDate(direction) {
 }
 
 function handleSubmit() {
+  if (form.roomId === "ROOM_1" && form.attendees >= 6) {
+    localError.value = "6명 이상 예약하려할때 회의실을 이용해주세요";
+    return;
+  }
+  localError.value = "";
   emit("submit", { ...form });
 }
 </script>
@@ -416,5 +439,29 @@ function handleSubmit() {
 .adjust-btn:disabled {
   opacity: 0.4;
   cursor: not-allowed;
+}
+
+.time-picker-custom {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.time-select {
+  flex: 1;
+  padding: 12px 16px;
+  font-size: 18px;
+  font-weight: 600;
+  border: 2px solid var(--border);
+  border-radius: 12px;
+  background: var(--bg);
+  color: var(--text-h);
+  outline: none;
+  transition: all 0.2s;
+}
+
+.time-select:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-bg);
 }
 </style>

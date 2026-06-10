@@ -17,7 +17,7 @@ export function validateCreateReservation(input) {
   validatePurpose(input.purpose);
   validateAttendees(input.attendees);
   validateTimeFormat(input.startTime, input.endTime);
-  validateTimeUnit(input.startTime, input.endTime);
+  // validateTimeUnit(input.startTime, input.endTime);
   validateTimeOrder(input.startTime, input.endTime);
   validateDuration(input.startTime, input.endTime);
   validateBusinessHours(input.startTime, input.endTime);
