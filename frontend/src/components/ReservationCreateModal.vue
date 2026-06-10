@@ -31,7 +31,9 @@
           <div class="form-field">
             <label for="reservation-date">예약일</label>
             <div class="date-adjuster">
-              <button type="button" class="adjust-btn" @click="adjustDate(-1)" :disabled="submitting">◀ 하루 전</button>
+              <button type="button" class="adjust-btn" @click="adjustDate(-1)" :disabled="submitting">
+                하루 전
+              </button>
               <input
                 id="reservation-date"
                 v-model="form.reservationDate"
@@ -39,7 +41,9 @@
                 required
                 :disabled="submitting"
               />
-              <button type="button" class="adjust-btn" @click="adjustDate(1)" :disabled="submitting">하루 후 ▶</button>
+              <button type="button" class="adjust-btn" @click="adjustDate(1)" :disabled="submitting">
+                다음날
+              </button>
             </div>
           </div>
 
@@ -120,6 +124,10 @@
           />
         </div>
 
+        <p v-if="suggestionMessage" class="notice">
+          {{ suggestionMessage }}
+        </p>
+
         <p v-if="errorMessage || localError" class="error">
           {{ errorMessage || localError }}
         </p>
@@ -134,8 +142,12 @@
             취소
           </button>
 
-          <button class="primary-button" type="submit" :disabled="submitting">
-            {{ submitting ? "등록 중..." : "등록" }}
+          <button
+            :class="['primary-button', { 'primary-button-warning': suggestionMessage }]"
+            type="submit"
+            :disabled="submitting"
+          >
+            {{ submitting ? "계속 수행 중..." : "계속 수행" }}
           </button>
         </div>
       </form>
@@ -144,7 +156,8 @@
 </template>
 
 <script setup>
-import { reactive, watch, ref } from "vue";
+import { reactive, ref, watch } from "vue";
+import { getRoomSuggestionMessage } from "../utils/reservationWarnings.js";
 
 const props = defineProps({
   isOpen: {
@@ -154,6 +167,10 @@ const props = defineProps({
   baseDate: {
     type: String,
     required: true
+  },
+  dailyReservations: {
+    type: Array,
+    default: () => []
   },
   submitting: {
     type: Boolean,
@@ -185,6 +202,9 @@ const startHour = ref("10");
 const startMinute = ref("00");
 const endHour = ref("11");
 const endMinute = ref("00");
+const localError = ref("");
+const suggestionMessage = ref("");
+const confirmedWarning = ref(false);
 
 watch([startHour, startMinute], () => {
   form.startTime = `${startHour.value}:${startMinute.value}`;
@@ -194,42 +214,41 @@ watch([endHour, endMinute], () => {
   form.endTime = `${endHour.value}:${endMinute.value}`;
 });
 
-const localError = ref("");
-
-const confirmedWarning = ref(false);
-
 watch(
-  () => [form.roomId, form.attendees],
+  () => [form.roomId, form.reservationDate, form.startTime, form.endTime, form.attendees],
   () => {
     confirmedWarning.value = false;
+    suggestionMessage.value = "";
   }
 );
 
 watch(
   () => props.isOpen,
   (newVal) => {
-    if (newVal) {
-      form.roomId = "ROOM_1";
-      form.reservationDate = props.baseDate;
-      form.startTime = "10:00";
-      form.endTime = "11:00";
-      startHour.value = "10";
-      startMinute.value = "00";
-      endHour.value = "11";
-      endMinute.value = "00";
-      form.ownerName = "";
-      form.attendees = 1;
-      form.purpose = "";
-      form.contact = "";
-      localError.value = "";
-      confirmedWarning.value = false;
-    }
+    if (!newVal) return;
+
+    form.roomId = "ROOM_1";
+    form.reservationDate = props.baseDate;
+    form.startTime = "10:00";
+    form.endTime = "11:00";
+    startHour.value = "10";
+    startMinute.value = "00";
+    endHour.value = "11";
+    endMinute.value = "00";
+    form.ownerName = "";
+    form.attendees = 1;
+    form.purpose = "";
+    form.contact = "";
+    localError.value = "";
+    suggestionMessage.value = "";
+    confirmedWarning.value = false;
   },
   { immediate: true }
 );
 
 function adjustDate(direction) {
   if (!form.reservationDate) return;
+
   const [y, m, d] = form.reservationDate.split("-").map(Number);
   const date = new Date(y, m - 1, d);
 
@@ -247,24 +266,27 @@ function adjustDate(direction) {
 function handleSubmit() {
   const contactClean = String(form.contact).trim();
   if (!/^[0-9-]+$/.test(contactClean)) {
-    localError.value = "연락처는 숫자와 하이픈(-)만 입력할 수 있습니다.";
+    localError.value = "연락처는 숫자와 하이픈만 입력할 수 있습니다.";
     return;
   }
 
-  const isRoom1Warn = form.roomId === "ROOM_1" && form.attendees >= 6;
-  const isRoom2Warn = form.roomId === "ROOM_2" && form.attendees <= 6;
+  const warning = getRoomSuggestionMessage({
+    dailyReservations: props.dailyReservations,
+    reservationDate: form.reservationDate,
+    roomId: form.roomId,
+    attendees: form.attendees,
+    startTime: form.startTime,
+    endTime: form.endTime
+  });
 
-  if ((isRoom1Warn || isRoom2Warn) && !confirmedWarning.value) {
-    if (isRoom1Warn) {
-      alert("6명 이상이면 가급적 회의실을 이용해주세요");
-    } else {
-      alert("가급적 서고를 이용해주세요");
-    }
+  if (warning && !confirmedWarning.value) {
+    suggestionMessage.value = warning;
     confirmedWarning.value = true;
     return;
   }
 
   localError.value = "";
+  suggestionMessage.value = "";
   confirmedWarning.value = false;
   emit("submit", { ...form });
 }
@@ -399,8 +421,20 @@ function handleSubmit() {
   box-shadow: 0 0 0 3px var(--accent-bg);
 }
 
+.notice {
+  margin: 0;
+  padding: 18px;
+  border: 2px solid hsla(215, 90%, 55%, 0.25);
+  border-radius: 12px;
+  background: hsla(215, 90%, 55%, 0.08);
+  color: hsl(215, 90%, 40%);
+  font-weight: 700;
+  font-size: 18px;
+  text-align: center;
+}
+
 .error {
-  margin: 16px 0 0;
+  margin: 0;
   padding: 18px;
   border: 2px solid hsla(0, 80%, 60%, 0.2);
   border-radius: 12px;
@@ -430,8 +464,16 @@ function handleSubmit() {
 }
 
 .primary-button {
+  min-width: 160px;
   border: 2px solid var(--accent);
   background: var(--accent);
+  color: #fff;
+  white-space: nowrap;
+}
+
+.primary-button-warning {
+  border-color: hsl(0, 80%, 50%);
+  background: hsl(0, 80%, 50%);
   color: #fff;
 }
 
@@ -439,6 +481,11 @@ function handleSubmit() {
   transform: translateY(-1px);
   box-shadow: var(--shadow-sm);
   filter: brightness(1.05);
+}
+
+.primary-button-warning:hover:not(:disabled) {
+  background: hsl(0, 80%, 45%);
+  border-color: hsl(0, 80%, 45%);
 }
 
 .secondary-button {

@@ -113,13 +113,13 @@ function formatDateFriendly(dateStr) {
 .day-list {
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: 18px;
 }
 
 .day-card {
   border: 2px solid var(--border);
   background: var(--bg);
-  border-radius: 18px;
+  border-radius: 16px;
   box-shadow: var(--shadow-sm);
   overflow: hidden;
   transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.25s;
@@ -134,7 +134,7 @@ function formatDateFriendly(dateStr) {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 20px 24px;
+  padding: 16px 18px;
   background: hsla(260, 15%, 93%, 0.5);
   border-bottom: 2px solid var(--border);
 }
@@ -142,17 +142,17 @@ function formatDateFriendly(dateStr) {
 .day-title-container {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
 }
 
 .day-date {
-  font-size: 24px;
+  font-size: 20px;
   font-weight: 800;
   color: var(--text-h);
 }
 
 .day-week-label {
-  font-size: 20px;
+  font-size: 16px;
   font-weight: 700;
   color: hsl(215, 90%, 50%);
   background: hsl(215, 90%, 95%);
@@ -161,38 +161,38 @@ function formatDateFriendly(dateStr) {
 }
 
 .count {
-  padding: 6px 16px;
+  padding: 5px 12px;
   border-radius: 999px;
   background: var(--accent);
   color: #fff;
-  font-size: 16px;
+  font-size: 14px;
   font-weight: 700;
 }
 
 .empty {
-  padding: 40px 20px;
+  padding: 28px 20px;
   color: var(--text);
   background: transparent;
   text-align: center;
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 600;
 }
 
 .reservations-container {
   display: flex;
   flex-direction: column;
-  padding: 16px;
-  gap: 12px;
+  padding: 12px;
+  gap: 10px;
 }
 
 .reservation-row-card {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 18px 20px;
+  padding: 14px 16px;
   background: var(--bg);
   border: 1px solid var(--border);
-  border-radius: 14px;
+  border-radius: 12px;
   transition: all 0.2s;
   gap: 16px;
 }
@@ -211,7 +211,7 @@ function formatDateFriendly(dateStr) {
 }
 
 .info-purpose {
-  font-size: 22px;
+  font-size: 18px;
   font-weight: 800;
   color: var(--text-h);
   line-height: 1.3;
@@ -224,8 +224,8 @@ function formatDateFriendly(dateStr) {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 16px;
-  font-size: 17px;
+  gap: 12px;
+  font-size: 14px;
   font-weight: 600;
   color: var(--text);
 }
@@ -244,14 +244,14 @@ function formatDateFriendly(dateStr) {
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  width: 100px;
+  width: 82px;
 }
 
 .room-badge-huge {
   display: inline-block;
-  padding: 8px 14px;
+  padding: 7px 12px;
   border-radius: 10px;
-  font-size: 16px;
+  font-size: 14px;
   font-weight: 800;
   text-align: center;
   width: 100%;
@@ -279,11 +279,11 @@ function formatDateFriendly(dateStr) {
 .edit-button-mini,
 .cancel-button-mini {
   border-radius: 8px;
-  padding: 6px 14px;
-  font-size: 14px;
+  padding: 5px 12px;
+  font-size: 13px;
   font-weight: 700;
   cursor: pointer;
-  width: 64px;
+  width: 58px;
   text-align: center;
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }

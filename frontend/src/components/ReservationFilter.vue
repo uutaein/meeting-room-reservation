@@ -74,13 +74,13 @@ function onBusinessDayCountChange(event) {
 <style scoped>
 .filter {
   display: flex;
-  gap: 20px;
+  gap: 14px;
   align-items: flex-end;
-  margin-bottom: 20px;
+  margin-bottom: 14px;
   background: var(--bg);
   border: 1px solid var(--border);
-  border-radius: 16px;
-  padding: 20px;
+  border-radius: 14px;
+  padding: 14px;
   box-shadow: var(--shadow-sm);
   backdrop-filter: blur(8px);
 }
@@ -91,9 +91,9 @@ function onBusinessDayCountChange(event) {
 
 .filter-item label {
   display: block;
-  margin-bottom: 8px;
+  margin-bottom: 6px;
   font-weight: 700;
-  font-size: 18px;
+  font-size: 16px;
   color: var(--text-h);
 }
 
@@ -101,8 +101,8 @@ function onBusinessDayCountChange(event) {
 .filter-item select {
   width: 100%;
   box-sizing: border-box;
-  padding: 12px 16px;
-  font-size: 18px;
+  padding: 10px 12px;
+  font-size: 16px;
   font-weight: 600;
   border: 2px solid var(--border);
   border-radius: 12px;
@@ -120,15 +120,15 @@ function onBusinessDayCountChange(event) {
 
 .period-summary {
   display: flex;
-  gap: 16px;
+  gap: 12px;
   align-items: center;
-  margin-bottom: 24px;
-  padding: 16px 24px;
+  margin-bottom: 18px;
+  padding: 12px 16px;
   border-radius: 14px;
   background: var(--accent-bg);
   border: 2px solid var(--accent-border);
   color: var(--text-h);
-  font-size: 18px;
+  font-size: 16px;
 }
 
 .period-summary strong {
@@ -137,11 +137,11 @@ function onBusinessDayCountChange(event) {
 }
 
 .summary-count {
-  padding: 6px 14px;
+  padding: 5px 12px;
   border-radius: 999px;
   background: var(--bg);
   border: 2px solid var(--accent-border);
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 700;
   color: var(--accent);
 }

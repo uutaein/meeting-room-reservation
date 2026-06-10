@@ -1,23 +1,25 @@
 <template>
   <main class="dashboard">
-    <header class="dashboard-header-simple">
-      <button class="primary-button-huge" type="button" @click="openCreateModal">
-        ➕ 새 예약 등록하기 (여기를 누르세요)
-      </button>
-    </header>
+    <div class="dashboard-top">
+      <header class="dashboard-header-simple">
+        <button class="primary-button-huge" type="button" @click="openCreateModal">
+          새 예약 등록하기 (여기를 누르세요)
+        </button>
+      </header>
 
-    <p v-if="successMessage" class="success">
-      {{ successMessage }}
-    </p>
+      <p v-if="successMessage" class="success">
+        {{ successMessage }}
+      </p>
 
-    <ReservationFilter
-      v-model:baseDate="baseDate"
-      v-model:businessDayCount="businessDayCount"
-      :loading="loading"
-      :submitting="submitting"
-      :periodRangeText="periodRangeText"
-      @change="loadReservations"
-    />
+      <ReservationFilter
+        v-model:baseDate="baseDate"
+        v-model:businessDayCount="businessDayCount"
+        :loading="loading"
+        :submitting="submitting"
+        :periodRangeText="periodRangeText"
+        @change="loadReservations"
+      />
+    </div>
 
     <section v-if="loading" class="message">
       예약 목록을 불러오는 중입니다.
@@ -37,20 +39,20 @@
       />
     </section>
 
-    <!-- Create Modal -->
     <ReservationCreateModal
       :isOpen="isCreateModalOpen"
       :baseDate="baseDate"
+      :dailyReservations="dailyReservations"
       :submitting="submitting"
       :errorMessage="formErrorMessage"
       @close="closeCreateModal"
       @submit="handleCreateSubmit"
     />
 
-    <!-- Update Modal -->
     <ReservationUpdateModal
       :isOpen="isUpdateModalOpen"
       :reservation="selectedReservation"
+      :dailyReservations="dailyReservations"
       :submitting="submitting"
       :errorMessage="updateErrorMessage"
       @close="closeUpdateModal"
@@ -180,10 +182,7 @@ async function loadReservations() {
   dailyReservations.value = [];
 
   try {
-    const businessDays = getNextBusinessDays(
-      baseDate.value,
-      businessDayCount.value
-    );
+    const businessDays = getNextBusinessDays(baseDate.value, businessDayCount.value);
 
     const results = await Promise.all(
       businessDays.map(async (day) => {
@@ -301,39 +300,56 @@ async function handleCancelReservation(day, reservation) {
 .dashboard {
   max-width: 100%;
   width: 100%;
-  margin: 20px auto;
-  padding: 24px;
+  margin: 0 auto;
+  padding: 12px 14px 18px;
   box-sizing: border-box;
   font-family: Arial, sans-serif;
 }
 
+.dashboard-top {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  margin-bottom: 14px;
+  padding: 10px 0 12px;
+  background: linear-gradient(to bottom, var(--bg) 86%, hsla(0, 0%, 100%, 0));
+  backdrop-filter: blur(10px);
+}
+
 .dashboard-header-simple {
-  margin-bottom: 24px;
+  margin-bottom: 10px;
   width: 100%;
 }
 
 .primary-button-huge {
   width: 100%;
-  padding: 22px 32px;
-  font-size: 26px;
+  padding: 14px 22px;
+  font-size: 20px;
   font-weight: 800;
   color: #ffffff;
   background: linear-gradient(135deg, hsl(215, 90%, 55%), hsl(225, 90%, 45%));
   border: none;
-  border-radius: 16px;
+  border-radius: 14px;
   cursor: pointer;
-  box-shadow: 0 8px 16px rgba(37, 99, 235, 0.25);
-  transition: all 0.2s ease;
+  box-shadow:
+    0 0 0 0 rgba(59, 130, 246, 0.32),
+    0 10px 18px rgba(37, 99, 235, 0.22);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 12px;
+  gap: 10px;
+  animation: create-button-pulse 1.8s ease-in-out infinite;
+  position: relative;
+  overflow: hidden;
 }
 
 .primary-button-huge:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 12px 24px rgba(37, 99, 235, 0.35);
-  background: linear-gradient(135deg, hsl(215, 95%, 58%), hsl(225, 95%, 48%));
+  transform: translateY(-1px) scale(1.01);
+  filter: brightness(1.05);
+  box-shadow:
+    0 0 0 3px rgba(59, 130, 246, 0.24),
+    0 12px 24px rgba(37, 99, 235, 0.28);
 }
 
 .primary-button-huge:active {
@@ -341,35 +357,49 @@ async function handleCancelReservation(day, reservation) {
   box-shadow: 0 4px 8px rgba(37, 99, 235, 0.2);
 }
 
+@keyframes create-button-pulse {
+  0%,
+  100% {
+    box-shadow:
+      0 0 0 0 rgba(59, 130, 246, 0.28),
+      0 10px 18px rgba(37, 99, 235, 0.22);
+  }
+  50% {
+    box-shadow:
+      0 0 0 4px rgba(59, 130, 246, 0.12),
+      0 12px 24px rgba(37, 99, 235, 0.32);
+  }
+}
+
 .message {
-  padding: 24px;
+  padding: 18px;
   border: 1px solid #ddd;
   background: #fafafa;
   border-radius: 12px;
-  font-size: 20px;
+  font-size: 18px;
   text-align: center;
 }
 
 .success {
-  margin: 0 0 20px;
-  padding: 18px;
+  margin: 0 0 12px;
+  padding: 14px 16px;
   border: 2px solid #b7e4c7;
   border-radius: 12px;
   background: #f0fff4;
   color: #1b7f3a;
-  font-size: 20px;
+  font-size: 16px;
   font-weight: 700;
   text-align: center;
 }
 
 .error {
-  margin: 20px 0 0;
-  padding: 18px;
+  margin: 16px 0 0;
+  padding: 16px;
   border: 2px solid #f1c0c0;
   border-radius: 12px;
   background: #fff5f5;
   color: #b00020;
-  font-size: 20px;
+  font-size: 17px;
   font-weight: 700;
   text-align: center;
 }
