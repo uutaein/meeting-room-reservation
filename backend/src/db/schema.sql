@@ -16,6 +16,7 @@ CREATE TABLE IF NOT EXISTS reservations (
   owner_name TEXT NOT NULL,
   attendees INTEGER NOT NULL,
   purpose TEXT NOT NULL,
+  contact TEXT,
   status TEXT NOT NULL DEFAULT 'ACTIVE',
   created_at TEXT NOT NULL DEFAULT (datetime('now')),
   updated_at TEXT NOT NULL DEFAULT (datetime('now')),

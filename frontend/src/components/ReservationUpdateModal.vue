@@ -96,16 +96,30 @@
           </div>
         </div>
 
-        <div class="form-field">
-          <label for="update-purpose">회의 목적</label>
-          <input
-            id="update-purpose"
-            v-model.trim="form.purpose"
-            type="text"
-            maxlength="30"
-            required
-            :disabled="submitting"
-          />
+        <div class="form-row">
+          <div class="form-field">
+            <label for="update-purpose">회의 목적</label>
+            <input
+              id="update-purpose"
+              v-model.trim="form.purpose"
+              type="text"
+              maxlength="30"
+              required
+              :disabled="submitting"
+            />
+          </div>
+
+          <div class="form-field">
+            <label for="update-contact">연락처</label>
+            <input
+              id="update-contact"
+              v-model.trim="form.contact"
+              type="text"
+              required
+              :disabled="submitting"
+              placeholder="숫자와 -만 입력 (예: 204-1234)"
+            />
+          </div>
         </div>
 
         <p v-if="errorMessage || localError" class="error">
@@ -162,7 +176,8 @@ const form = reactive({
   endTime: "11:00",
   ownerName: "",
   attendees: 1,
-  purpose: ""
+  purpose: "",
+  contact: ""
 });
 
 const hours = Array.from({ length: 13 }, (_, i) => String(i + 8).padStart(2, "0"));
@@ -203,6 +218,7 @@ watch(
       form.ownerName = newVal.ownerName || "";
       form.attendees = newVal.attendees || 1;
       form.purpose = newVal.purpose || "";
+      form.contact = newVal.contact || "";
       localError.value = "";
     }
   },
@@ -228,6 +244,11 @@ function adjustDate(direction) {
 function handleSubmit() {
   if (form.roomId === "ROOM_1" && form.attendees >= 6) {
     localError.value = "6명 이상 예약하려할때 회의실을 이용해주세요";
+    return;
+  }
+  const contactClean = String(form.contact).trim();
+  if (!/^[0-9-]+$/.test(contactClean)) {
+    localError.value = "연락처는 숫자와 하이픈(-)만 입력할 수 있습니다.";
     return;
   }
   localError.value = "";

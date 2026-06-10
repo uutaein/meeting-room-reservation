@@ -40,10 +40,10 @@
               {{ reservation.purpose }}
             </div>
             
-            <!-- 2, 3순위 -->
             <div class="info-meta">
               <span class="meta-time">⏰ {{ reservation.startTime }} ~ {{ reservation.endTime }}</span>
               <span class="meta-owner">👤 {{ reservation.ownerName }}</span>
+              <span v-if="reservation.contact" class="meta-contact">📞 {{ reservation.contact }}</span>
             </div>
           </div>
 

@@ -299,9 +299,11 @@ async function handleCancelReservation(day, reservation) {
 
 <style scoped>
 .dashboard {
-  max-width: 1080px;
+  max-width: 100%;
+  width: 100%;
   margin: 20px auto;
   padding: 24px;
+  box-sizing: border-box;
   font-family: Arial, sans-serif;
 }
 

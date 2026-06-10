@@ -12,6 +12,7 @@ export function saveReservation(input) {
       owner_name,
       attendees,
       purpose,
+      contact,
       status
     )
     VALUES (
@@ -22,6 +23,7 @@ export function saveReservation(input) {
       @ownerName,
       @attendees,
       @purpose,
+      @contact,
       'ACTIVE'
     )
   `);
@@ -33,7 +35,8 @@ export function saveReservation(input) {
     endTime: input.endTime,
     ownerName: input.ownerName,
     attendees: input.attendees,
-    purpose: input.purpose
+    purpose: input.purpose,
+    contact: input.contact || ""
   });
 
   return findReservationById(result.lastInsertRowid);
@@ -69,6 +72,7 @@ export function findReservationById(id) {
         owner_name,
         attendees,
         purpose,
+        contact,
         status,
         created_at,
         updated_at
@@ -94,6 +98,7 @@ function toReservation(row) {
     ownerName: row.owner_name,
     attendees: row.attendees,
     purpose: row.purpose,
+    contact: row.contact,
     status: row.status,
     createdAt: row.created_at,
     updatedAt: row.updated_at
@@ -136,6 +141,7 @@ export function findReservationsByDate(date) {
       owner_name AS ownerName,
       attendees,
       purpose,
+      contact,
       status
     FROM reservations
     WHERE reservation_date = ?
@@ -191,6 +197,7 @@ export function updateReservationById(id, input) {
         owner_name = ?,
         attendees = ?,
         purpose = ?,
+        contact = ?,
         updated_at = CURRENT_TIMESTAMP
       WHERE id = ?
     `)
@@ -202,6 +209,7 @@ export function updateReservationById(id, input) {
       input.ownerName,
       input.attendees,
       input.purpose,
+      input.contact || "",
       id
     );
 

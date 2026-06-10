@@ -306,6 +306,10 @@ components:
           minLength: 1
           maxLength: 30
           example: 주간회의
+        contact:
+          type: string
+          description: 연락처. 숫자와 하이픈만 허용.
+          example: '123-4567'
 
     Reservation:
       type: object
@@ -352,6 +356,9 @@ components:
         purpose:
           type: string
           example: 주간회의
+        contact:
+          type: string
+          example: '123-4567'
         status:
           type: string
           enum:

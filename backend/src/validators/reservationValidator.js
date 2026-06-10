@@ -21,6 +21,7 @@ export function validateCreateReservation(input) {
   validateTimeOrder(input.startTime, input.endTime);
   validateDuration(input.startTime, input.endTime);
   validateBusinessHours(input.startTime, input.endTime);
+  validateContact(input.contact);
 }
 
 export function validateListReservationQuery(query) {
@@ -196,4 +197,18 @@ function throwProblem(status, code, message) {
   error.code = code;
   error.errorCode = code;
   throw error;
+}
+
+function validateContact(contact) {
+  if (contact === undefined || contact === null || String(contact).trim() === "") {
+    return;
+  }
+  const value = String(contact).trim();
+  if (!/^[0-9-]+$/.test(value)) {
+    throwProblem(
+      400,
+      "ERR_CONTACT_FORMAT",
+      "연락처는 숫자와 하이픈(-)만 입력할 수 있습니다."
+    );
+  }
 }
