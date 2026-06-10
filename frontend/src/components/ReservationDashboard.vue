@@ -7,10 +7,6 @@
         </button>
       </header>
 
-      <p v-if="successMessage" class="success">
-        {{ successMessage }}
-      </p>
-
       <ReservationFilter
         v-model:baseDate="baseDate"
         v-model:businessDayCount="businessDayCount"
@@ -35,7 +31,7 @@
         :loading="loading"
         :submitting="submitting"
         @edit-reservation="openUpdateModal"
-        @cancel-reservation="handleCancelReservation"
+        @cancel-reservation="openCancelConfirm"
       />
     </section>
 
@@ -58,6 +54,56 @@
       @close="closeUpdateModal"
       @submit="handleUpdateSubmit"
     />
+
+    <div
+      v-if="isCancelConfirmOpen"
+      class="cancel-confirm-backdrop"
+      @click.self="closeCancelConfirm"
+    >
+      <section class="cancel-confirm-modal" role="dialog" aria-modal="true" aria-label="예약 취소 확인">
+        <header class="cancel-confirm-header">
+          <h2>예약 취소</h2>
+          <button
+            class="cancel-confirm-close"
+            type="button"
+            :disabled="submitting"
+            @click="closeCancelConfirm"
+          >
+            ×
+          </button>
+        </header>
+
+        <p class="cancel-confirm-message">
+          {{ cancelConfirmMessage }}
+        </p>
+
+        <div class="cancel-confirm-actions">
+          <button
+            class="secondary-button"
+            type="button"
+            :disabled="submitting"
+            @click="closeCancelConfirm"
+          >
+            아니요
+          </button>
+
+          <button
+            class="danger-button"
+            type="button"
+            :disabled="submitting"
+            @click="confirmCancelReservation"
+          >
+            {{ submitting ? "취소 중..." : "예, 취소할게요" }}
+          </button>
+        </div>
+      </section>
+    </div>
+
+    <transition name="toast-fade">
+      <div v-if="toastMessage" class="toast" :class="`toast-${toastType}`">
+        {{ toastMessage }}
+      </div>
+    </transition>
   </main>
 </template>
 
@@ -75,7 +121,6 @@ import ReservationCreateModal from "./ReservationCreateModal.vue";
 import ReservationUpdateModal from "./ReservationUpdateModal.vue";
 
 const DEFAULT_BUSINESS_DAY_COUNT = 10;
-
 const today = toDateInputValue(new Date());
 
 const baseDate = ref(today);
@@ -86,10 +131,14 @@ const submitting = ref(false);
 const errorMessage = ref("");
 const formErrorMessage = ref("");
 const updateErrorMessage = ref("");
-const successMessage = ref("");
 const isCreateModalOpen = ref(false);
 const isUpdateModalOpen = ref(false);
 const selectedReservation = ref(null);
+const isCancelConfirmOpen = ref(false);
+const cancelTarget = ref(null);
+const toastMessage = ref("");
+const toastType = ref("success");
+let toastTimer = null;
 
 const periodRangeText = computed(() => {
   if (dailyReservations.value.length === 0) {
@@ -102,52 +151,67 @@ const periodRangeText = computed(() => {
   return `${firstDate} ~ ${lastDate}`;
 });
 
+const cancelConfirmMessage = computed(() => {
+  const target = cancelTarget.value;
+  if (!target) {
+    return "";
+  }
+
+  return `${target.day.date} ${target.reservation.startTime}~${target.reservation.endTime} ${getRoomName(
+    target.reservation.roomId
+  )} 예약을 취소할까요?`;
+});
+
 onMounted(() => {
   loadReservations();
 });
 
 function openCreateModal() {
   formErrorMessage.value = "";
-  successMessage.value = "";
   isCreateModalOpen.value = true;
 }
 
 function closeCreateModal() {
-  if (submitting.value) {
-    return;
-  }
+  if (submitting.value) return;
   formErrorMessage.value = "";
   isCreateModalOpen.value = false;
 }
 
 function openUpdateModal(day, reservation) {
   updateErrorMessage.value = "";
-  successMessage.value = "";
   selectedReservation.value = { ...reservation, reservationDate: day.date };
   isUpdateModalOpen.value = true;
 }
 
 function closeUpdateModal() {
-  if (submitting.value) {
-    return;
-  }
+  if (submitting.value) return;
   updateErrorMessage.value = "";
   selectedReservation.value = null;
   isUpdateModalOpen.value = false;
 }
 
+function openCancelConfirm(day, reservation) {
+  if (submitting.value) return;
+  errorMessage.value = "";
+  cancelTarget.value = { day, reservation };
+  isCancelConfirmOpen.value = true;
+}
+
+function closeCancelConfirm() {
+  if (submitting.value) return;
+  isCancelConfirmOpen.value = false;
+  cancelTarget.value = null;
+}
+
 async function handleCreateSubmit(formData) {
   submitting.value = true;
   formErrorMessage.value = "";
-  successMessage.value = "";
 
   try {
     await createReservation(formData);
-
-    successMessage.value = "예약이 등록되었습니다.";
+    showToast("예약이 등록되었습니다.");
     baseDate.value = today;
     isCreateModalOpen.value = false;
-
     await loadReservations();
   } catch (error) {
     formErrorMessage.value = error.message;
@@ -159,18 +223,37 @@ async function handleCreateSubmit(formData) {
 async function handleUpdateSubmit(id, formData) {
   submitting.value = true;
   updateErrorMessage.value = "";
-  successMessage.value = "";
 
   try {
     await updateReservation(id, formData);
-
-    successMessage.value = "예약이 변경되었습니다.";
+    showToast("예약이 변경되었습니다.");
     isUpdateModalOpen.value = false;
     selectedReservation.value = null;
-
     await loadReservations();
   } catch (error) {
     updateErrorMessage.value = error.message;
+  } finally {
+    submitting.value = false;
+  }
+}
+
+async function confirmCancelReservation() {
+  if (!cancelTarget.value) {
+    closeCancelConfirm();
+    return;
+  }
+
+  submitting.value = true;
+  errorMessage.value = "";
+
+  try {
+    await cancelReservation(cancelTarget.value.reservation.id);
+    showToast("예약이 취소되었습니다.");
+    isCancelConfirmOpen.value = false;
+    cancelTarget.value = null;
+    await loadReservations();
+  } catch (error) {
+    errorMessage.value = error.message || "예약 취소에 실패했습니다.";
   } finally {
     submitting.value = false;
   }
@@ -187,7 +270,6 @@ async function loadReservations() {
     const results = await Promise.all(
       businessDays.map(async (day) => {
         const reservations = await fetchReservationsByDate(day.date);
-
         return {
           ...day,
           reservations
@@ -224,26 +306,22 @@ function getNextBusinessDays(dateText, count) {
 
 function isBusinessDay(date) {
   const day = date.getDay();
-
   return day !== 0 && day !== 6;
 }
 
 function getDayLabel(date) {
   const dayNames = ["일", "월", "화", "수", "목", "금", "토"];
-
   return `${dayNames[date.getDay()]}요일`;
 }
 
 function addDays(date, days) {
   const copiedDate = new Date(date);
   copiedDate.setDate(copiedDate.getDate() + days);
-
   return copiedDate;
 }
 
 function parseLocalDate(dateText) {
   const [year, month, day] = dateText.split("-").map(Number);
-
   return new Date(year, month - 1, day);
 }
 
@@ -251,48 +329,27 @@ function toDateInputValue(date) {
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, "0");
   const day = String(date.getDate()).padStart(2, "0");
-
   return `${year}-${month}-${day}`;
 }
 
 function getRoomName(roomId) {
-  if (roomId === "ROOM_1") {
-    return "서고";
-  }
-
-  if (roomId === "ROOM_2") {
-    return "회의실";
-  }
-
+  if (roomId === "ROOM_1") return "서고";
+  if (roomId === "ROOM_2") return "회의실";
   return roomId;
 }
 
-async function handleCancelReservation(day, reservation) {
-  const confirmed = window.confirm(
-    `${day.date} ${reservation.startTime}~${reservation.endTime} ${getRoomName(
-      reservation.roomId
-    )} 예약을 취소하시겠습니까?`
-  );
-
-  if (!confirmed) {
-    return;
+function showToast(message, type = "success") {
+  if (toastTimer) {
+    clearTimeout(toastTimer);
   }
 
-  loading.value = true;
-  errorMessage.value = "";
-  successMessage.value = "";
+  toastMessage.value = message;
+  toastType.value = type;
 
-  try {
-    await cancelReservation(reservation.id);
-
-    successMessage.value = "예약이 취소되었습니다.";
-
-    await loadReservations();
-  } catch (error) {
-    errorMessage.value = error.message || "예약 취소에 실패했습니다.";
-  } finally {
-    loading.value = false;
-  }
+  toastTimer = window.setTimeout(() => {
+    toastMessage.value = "";
+    toastTimer = null;
+  }, 2200);
 }
 </script>
 
@@ -307,17 +364,18 @@ async function handleCancelReservation(day, reservation) {
 }
 
 .dashboard-top {
-  position: sticky;
-  top: 0;
-  z-index: 30;
   margin-bottom: 14px;
-  padding: 10px 0 12px;
-  background: linear-gradient(to bottom, var(--bg) 86%, hsla(0, 0%, 100%, 0));
-  backdrop-filter: blur(10px);
+  padding: 10px 0 8px;
 }
 
 .dashboard-header-simple {
+  position: sticky;
+  top: 0;
+  z-index: 30;
   margin-bottom: 10px;
+  padding: 8px 0 10px;
+  background: linear-gradient(to bottom, var(--bg) 86%, hsla(0, 0%, 100%, 0));
+  backdrop-filter: blur(10px);
   width: 100%;
 }
 
@@ -380,18 +438,6 @@ async function handleCancelReservation(day, reservation) {
   text-align: center;
 }
 
-.success {
-  margin: 0 0 12px;
-  padding: 14px 16px;
-  border: 2px solid #b7e4c7;
-  border-radius: 12px;
-  background: #f0fff4;
-  color: #1b7f3a;
-  font-size: 16px;
-  font-weight: 700;
-  text-align: center;
-}
-
 .error {
   margin: 16px 0 0;
   padding: 16px;
@@ -428,5 +474,129 @@ async function handleCancelReservation(day, reservation) {
 .secondary-button:disabled {
   cursor: not-allowed;
   opacity: 0.6;
+}
+
+.danger-button {
+  border: 1px solid #dc2626;
+  background: #dc2626;
+  color: #fff;
+  padding: 10px 16px;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  border-radius: 12px;
+}
+
+.danger-button:hover:not(:disabled) {
+  filter: brightness(1.05);
+  box-shadow: 0 8px 18px rgba(220, 38, 38, 0.28);
+}
+
+.danger-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.cancel-confirm-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(17, 24, 39, 0.42);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  z-index: 2000;
+}
+
+.cancel-confirm-modal {
+  width: min(420px, 100%);
+  border-radius: 18px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  box-shadow: var(--shadow-lg);
+  padding: 20px;
+}
+
+.cancel-confirm-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.cancel-confirm-header h2 {
+  margin: 0;
+  font-size: 22px;
+}
+
+.cancel-confirm-close {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text-h);
+  font-size: 24px;
+  cursor: pointer;
+}
+
+.cancel-confirm-message {
+  margin: 0;
+  padding: 14px 16px;
+  border-radius: 12px;
+  background: hsla(0, 80%, 60%, 0.06);
+  border: 1px solid hsla(0, 80%, 60%, 0.18);
+  color: var(--text-h);
+  font-size: 16px;
+  line-height: 1.5;
+}
+
+.cancel-confirm-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.toast {
+  position: fixed;
+  left: 50%;
+  top: 18px;
+  transform: translateX(-50%);
+  z-index: 3000;
+  min-width: min(360px, calc(100vw - 32px));
+  max-width: calc(100vw - 32px);
+  padding: 14px 18px;
+  border-radius: 14px;
+  box-shadow: var(--shadow-lg);
+  font-size: 16px;
+  font-weight: 700;
+  text-align: center;
+  border: 1px solid transparent;
+}
+
+.toast-success {
+  background: #f0fff4;
+  border-color: #b7e4c7;
+  color: #1b7f3a;
+}
+
+.toast-error {
+  background: #fff5f5;
+  border-color: #f1c0c0;
+  color: #b00020;
+}
+
+.toast-fade-enter-active,
+.toast-fade-leave-active {
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.toast-fade-enter-from,
+.toast-fade-leave-to {
+  opacity: 0;
+  transform: translateX(-50%) translateY(-8px);
 }
 </style>
