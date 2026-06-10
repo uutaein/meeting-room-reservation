@@ -116,8 +116,8 @@ export function updateReservation(id, input) {
     throw error;
   }
 
-  validateReservationInput(input);
-  validateRoomCapacity(input);
+  validateCreateReservation(input);
+  validateRoomCapacity(input.roomId, input.attendees);
 
   const hasOverlap = existsOverlappingReservationExceptSelf(id, input);
 

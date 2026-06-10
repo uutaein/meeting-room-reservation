@@ -2,7 +2,8 @@ import { Router } from "express";
 import {
   createReservation,
   listReservations,
-  cancelReservation
+  cancelReservation,
+  updateReservation
 } from "../services/reservationService.js";
 
 const router = Router();
@@ -43,6 +44,22 @@ router.get("/", (req, res) => {
     return res.status(error.status || 500).json({
       errorCode: error.errorCode || error.code || "ERR_INTERNAL_SERVER",
       message: error.message
+    });
+  }
+});
+
+// feature/reservation-update
+router.put("/:id", (req, res) => {
+  try {
+    const reservation = updateReservation(Number(req.params.id), req.body);
+
+    res.status(200).json({
+      reservation
+    });
+  } catch (error) {
+    res.status(error.statusCode || error.status || 500).json({
+      code: error.code || error.errorCode || "ERR_INTERNAL_SERVER_ERROR",
+      message: error.message || "서버 오류가 발생했습니다."
     });
   }
 });

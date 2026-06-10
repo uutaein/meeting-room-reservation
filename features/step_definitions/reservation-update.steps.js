@@ -143,6 +143,11 @@ When("사용자가 참석 인원을 7명으로 수정한다", async function () 
 });
 
 Then("응답 상태 코드는 {int}이다", function (expectedStatusCode) {
+  if (response.status !== expectedStatusCode) {
+    console.log("actual status:", response.status);
+    console.log("response body:", responseBody);
+  }
+
   assert.equal(response.status, expectedStatusCode);
 });
 
