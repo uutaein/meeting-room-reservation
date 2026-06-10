@@ -3,55 +3,65 @@
     <article
       v-for="day in dailyReservations"
       :key="day.date"
-      class="day-card"
+      :class="['day-card', { 'is-today': isToday(day.date) }]"
     >
       <header class="day-header">
         <div class="day-title-container">
           <span class="day-date">{{ formatDateFriendly(day.date) }}</span>
           <span class="day-week-label">{{ day.label }}</span>
+          <span v-if="isToday(day.date)" class="today-label">오늘</span>
         </div>
 
-        <span class="count">
-          예약 {{ day.reservations.length }}건
-        </span>
+        <span class="count">예약 {{ day.reservations.length }}건</span>
       </header>
 
       <div v-if="day.reservations.length === 0" class="empty">
-        이 날은 등록된 예약이 없습니다.
+        등록된 예약이 없습니다.
       </div>
 
       <div v-else class="reservations-container">
-        <div
+        <article
           v-for="reservation in day.reservations"
           :key="reservation.id"
-          class="reservation-row-card"
+          class="reservation-card"
         >
-          <!-- 1. 회의실 장소 (크게, 가운데 정렬) -->
-          <div class="reservation-room-column">
-            <span :class="['room-badge-huge', reservation.roomId.toLowerCase()]">
-              {{ getRoomName(reservation.roomId) }}
+          <div :class="['room-block', roomClass(reservation.roomId)]">
+            <span class="room-indicator" aria-hidden="true"></span>
+            <span class="room-name">{{ getRoomName(reservation.roomId) }}</span>
+          </div>
+
+          <div class="time-block">
+            <span class="time-value">
+              {{ reservation.startTime }} <span class="time-separator">–</span> {{ reservation.endTime }}
             </span>
           </div>
 
-          <!-- 2. 핵심 정보 -->
-          <div class="reservation-details">
-            <!-- 1순위: 목적 -->
-            <div class="info-purpose" :title="reservation.purpose">
+          <div class="reservation-content">
+            <div class="reservation-title" :title="reservation.purpose">
               {{ reservation.purpose }}
             </div>
-            
-            <div class="info-meta">
-              <span class="meta-time">⏰ {{ reservation.startTime }} ~ {{ reservation.endTime }}</span>
-              <span class="meta-owner">👤 {{ reservation.ownerName }}</span>
-              <span v-if="reservation.contact" class="meta-contact">📞 {{ reservation.contact }}</span>
+
+            <div class="reservation-meta">
+              <span class="meta-item">
+                <svg class="meta-icon" viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm7 8a7 7 0 0 0-14 0" />
+                </svg>
+                <span>{{ reservation.ownerName }}</span>
+              </span>
+
+              <span class="meta-item">
+                <svg class="meta-icon" viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M7.5 3.5 10 8 7.8 9.8a15.5 15.5 0 0 0 6.4 6.4L16 14l4.5 2.5-.8 4A2 2 0 0 1 17.8 22C9.1 21.5 2.5 14.9 2 6.2a2 2 0 0 1 1.5-1.9l4-.8Z" />
+                </svg>
+                <span>{{ reservation.contact }}</span>
+              </span>
             </div>
           </div>
 
-          <!-- 3. 관리 액션 (수정/취소 위아래 배치, 크기 축소) -->
-          <div class="reservation-actions-vertical">
+          <div class="reservation-actions">
             <button
               type="button"
-              class="edit-button-mini"
+              class="edit-button"
               :disabled="loading || submitting"
               @click="$emit('edit-reservation', day, reservation)"
             >
@@ -59,14 +69,14 @@
             </button>
             <button
               type="button"
-              class="cancel-button-mini"
+              class="cancel-button"
               :disabled="loading || submitting"
               @click="$emit('cancel-reservation', day, reservation)"
             >
               취소
             </button>
           </div>
-        </div>
+        </article>
       </div>
     </article>
   </div>
@@ -102,6 +112,23 @@ function getRoomName(roomId) {
   return roomId;
 }
 
+function roomClass(roomId) {
+  return roomId ? roomId.toLowerCase() : "";
+}
+
+function isToday(dateStr) {
+  if (!dateStr) return false;
+
+  const today = new Date();
+  const localToday = [
+    today.getFullYear(),
+    String(today.getMonth() + 1).padStart(2, "0"),
+    String(today.getDate()).padStart(2, "0")
+  ].join("-");
+
+  return dateStr === localToday;
+}
+
 function formatDateFriendly(dateStr) {
   if (!dateStr) return "";
   const [year, month, day] = dateStr.split("-").map(Number);
@@ -113,210 +140,425 @@ function formatDateFriendly(dateStr) {
 .day-list {
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: 16px;
 }
 
 .day-card {
-  border: 2px solid var(--border);
-  background: var(--bg);
-  border-radius: 16px;
-  box-shadow: var(--shadow-sm);
   overflow: hidden;
-  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.25s;
+  border: 1px solid rgba(148, 163, 184, 0.24);
+  border-radius: 16px;
+  background: #ffffff;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
 }
 
-.day-card:hover {
-  transform: translateY(-4px);
-  box-shadow: var(--shadow-md);
+.day-card.is-today {
+  border-color: rgba(245, 158, 11, 0.38);
+  box-shadow: 0 9px 28px rgba(245, 158, 11, 0.1);
 }
 
 .day-header {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  padding: 16px 18px;
-  background: hsla(260, 15%, 93%, 0.5);
-  border-bottom: 2px solid var(--border);
+  justify-content: space-between;
+  padding: 12px 14px;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.2);
+  background: linear-gradient(180deg, #fbfcfe 0%, #f6f8fb 100%);
+}
+
+.day-card.is-today .day-header {
+  border-bottom-color: rgba(245, 158, 11, 0.2);
+  background: linear-gradient(135deg, #fffdf7 0%, #fff6dc 100%);
+}
+
+.day-card.is-today .reservations-container {
+  background: linear-gradient(180deg, rgba(255, 251, 235, 0.36), rgba(255, 255, 255, 0));
 }
 
 .day-title-container {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
+  min-width: 0;
 }
 
 .day-date {
-  font-size: 20px;
+  color: #172033;
+  font-size: 17px;
   font-weight: 800;
-  color: var(--text-h);
+  letter-spacing: -0.03em;
 }
 
 .day-week-label {
-  font-size: 16px;
-  font-weight: 700;
-  color: hsl(215, 90%, 50%);
-  background: hsl(215, 90%, 95%);
-  padding: 4px 10px;
-  border-radius: 8px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: #eaf2ff;
+  color: #2563eb;
+  font-size: 12px;
+  font-weight: 750;
+}
+
+.today-label {
+  padding: 3px 8px;
+  border: 1px solid rgba(245, 158, 11, 0.24);
+  border-radius: 999px;
+  background: rgba(245, 158, 11, 0.12);
+  color: #b45309;
+  font-size: 12px;
+  font-weight: 800;
 }
 
 .count {
-  padding: 5px 12px;
+  flex-shrink: 0;
+  padding: 4px 9px;
   border-radius: 999px;
-  background: var(--accent);
-  color: #fff;
-  font-size: 14px;
-  font-weight: 700;
+  background: #6d4aff;
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 750;
+  box-shadow: 0 4px 10px rgba(109, 74, 255, 0.18);
+}
+
+.day-card.is-today .count {
+  background: linear-gradient(135deg, #f59e0b, #f97316);
+  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.22);
 }
 
 .empty {
-  padding: 28px 20px;
-  color: var(--text);
-  background: transparent;
+  padding: 24px 16px;
+  color: #64748b;
   text-align: center;
-  font-size: 16px;
+  font-size: 14px;
   font-weight: 600;
 }
 
 .reservations-container {
   display: flex;
   flex-direction: column;
-  padding: 12px;
-  gap: 10px;
+  gap: 6px;
+  padding: 7px;
 }
 
-.reservation-row-card {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 14px 16px;
-  background: var(--bg);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  transition: all 0.2s;
-  gap: 16px;
-}
-
-.reservation-row-card:hover {
-  background: hsla(260, 10%, 96%, 0.3);
-  border-color: var(--accent-border);
-}
-
-.reservation-details {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  flex-grow: 1;
-  min-width: 0;
-}
-
-.info-purpose {
-  font-size: 18px;
-  font-weight: 800;
-  color: var(--text-h);
-  line-height: 1.3;
+.reservation-card {
+  display: grid;
+  grid-template-columns: 80px 132px minmax(0, 1fr) 52px;
+  align-items: stretch;
+  min-height: 64px;
   overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  border-radius: 12px;
+  background: #ffffff;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03);
+  transition: border-color 0.2s, box-shadow 0.2s, transform 0.2s;
 }
 
-.info-meta {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 12px;
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--text);
+.reservation-card:hover {
+  border-color: rgba(109, 74, 255, 0.3);
+  box-shadow: 0 5px 16px rgba(15, 23, 42, 0.07);
+  transform: translateY(-1px);
 }
 
-.meta-time {
-  font-weight: 700;
-  color: hsl(265, 80%, 45%);
-}
-
-.meta-owner {
-  color: var(--text-h);
-}
-
-.reservation-room-column {
+.room-block {
   display: flex;
   align-items: center;
   justify-content: center;
-  flex-shrink: 0;
-  width: 82px;
+  gap: 6px;
+  padding: 8px;
+  border-right: 1px solid rgba(148, 163, 184, 0.14);
 }
 
-.room-badge-huge {
-  display: inline-block;
-  padding: 7px 12px;
-  border-radius: 10px;
+.room-indicator {
+  width: 6px;
+  height: 6px;
+  flex-shrink: 0;
+  border-radius: 50%;
+}
+
+.room-name {
   font-size: 14px;
   font-weight: 800;
-  text-align: center;
-  width: 100%;
+  letter-spacing: -0.02em;
+  white-space: nowrap;
 }
 
-.room-badge-huge.room_1 {
-  background: hsla(200, 85%, 60%, 0.1);
-  color: hsl(200, 85%, 40%);
-  border: 2px solid hsla(200, 85%, 60%, 0.3);
+.room-block.room_1 {
+  background: linear-gradient(135deg, #eef8ff 0%, #e2f3ff 100%);
+  color: #0875a5;
 }
 
-.room-badge-huge.room_2 {
-  background: hsla(275, 85%, 60%, 0.1);
-  color: hsl(275, 85%, 40%);
-  border: 2px solid hsla(275, 85%, 60%, 0.3);
+.room-block.room_1 .room-indicator {
+  background: #0ea5e9;
+  box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.12);
 }
 
-.reservation-actions-vertical {
+.room-block.room_2 {
+  background: linear-gradient(135deg, #f7f0ff 0%, #eee3ff 100%);
+  color: #7638ad;
+}
+
+.room-block.room_2 .room-indicator {
+  background: #a855f7;
+  box-shadow: 0 0 0 3px rgba(168, 85, 247, 0.12);
+}
+
+.time-block {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 10px;
+  border-right: 1px solid rgba(148, 163, 184, 0.14);
+  background: #fbfcfe;
+}
+
+.time-value {
+  color: #172033;
+  font-size: 16px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.03em;
+  white-space: nowrap;
+}
+
+.time-separator {
+  color: #94a3b8;
+  font-weight: 600;
+}
+
+.reservation-content {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  justify-content: center;
+  gap: 5px;
+  padding: 8px 14px;
+  text-align: left;
+}
+
+.reservation-title {
+  overflow: hidden;
+  color: #111827;
+  font-size: 16px;
+  font-weight: 750;
+  letter-spacing: -0.025em;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: left;
+}
+
+.reservation-meta {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  min-width: 0;
+  color: #64748b;
+}
+
+.meta-item {
+  display: inline-flex;
+  align-items: center;
+  min-width: 0;
+  gap: 5px;
+  font-size: 11px;
+  font-weight: 650;
+  white-space: nowrap;
+}
+
+.meta-item span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.meta-icon {
+  width: 13px;
+  height: 13px;
+  flex-shrink: 0;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.8;
+}
+
+.reservation-actions {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  flex-shrink: 0;
+  align-items: stretch;
+  justify-content: center;
+  gap: 4px;
+  padding: 6px;
+  border-left: 1px solid rgba(148, 163, 184, 0.14);
+  background: #fbfcfe;
 }
 
-.edit-button-mini,
-.cancel-button-mini {
-  border-radius: 8px;
-  padding: 5px 12px;
-  font-size: 13px;
-  font-weight: 700;
+.edit-button,
+.cancel-button {
+  min-height: 23px;
+  padding: 2px 4px;
+  border-radius: 7px;
+  font-size: 11px;
+  font-weight: 750;
   cursor: pointer;
-  width: 58px;
-  text-align: center;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: background-color 0.18s, border-color 0.18s, color 0.18s;
 }
 
-.edit-button-mini {
-  border: 2px solid var(--accent-border);
-  background: transparent;
-  color: var(--accent);
+.edit-button {
+  border: 1px solid rgba(109, 74, 255, 0.28);
+  background: rgba(109, 74, 255, 0.06);
+  color: #6240e8;
 }
 
-.edit-button-mini:hover:not(:disabled) {
-  background: var(--accent);
-  border-color: var(--accent);
-  color: #fff;
-  transform: translateY(-1px);
+.edit-button:hover:not(:disabled) {
+  border-color: rgba(109, 74, 255, 0.45);
+  background: rgba(109, 74, 255, 0.13);
 }
 
-.cancel-button-mini {
-  border: 2px solid hsla(0, 80%, 60%, 0.4);
-  background: transparent;
-  color: hsl(0, 80%, 50%);
+.cancel-button {
+  border: 1px solid rgba(239, 68, 68, 0.24);
+  background: rgba(239, 68, 68, 0.04);
+  color: #dc2626;
 }
 
-.cancel-button-mini:hover:not(:disabled) {
-  background: hsl(0, 80%, 50%);
-  border-color: hsl(0, 80%, 50%);
-  color: #fff;
-  transform: translateY(-1px);
+.cancel-button:hover:not(:disabled) {
+  border-color: rgba(239, 68, 68, 0.4);
+  background: rgba(239, 68, 68, 0.1);
 }
 
-.edit-button-mini:disabled,
-.cancel-button-mini:disabled {
-  opacity: 0.4;
+.edit-button:disabled,
+.cancel-button:disabled {
   cursor: not-allowed;
+  opacity: 0.42;
+}
+
+@media (min-width: 900px) and (max-width: 1200px) and (min-height: 1200px) {
+  .day-list {
+    gap: 20px;
+  }
+
+  .day-header {
+    padding: 16px 18px;
+  }
+
+  .day-title-container {
+    gap: 10px;
+  }
+
+  .day-date {
+    font-size: 22px;
+  }
+
+  .day-week-label,
+  .today-label {
+    padding: 4px 10px;
+    font-size: 14px;
+  }
+
+  .count {
+    padding: 6px 12px;
+    font-size: 14px;
+  }
+
+  .reservations-container {
+    gap: 8px;
+    padding: 9px;
+  }
+
+  .reservation-card {
+    grid-template-columns: 100px 164px minmax(0, 1fr) 66px;
+    min-height: 76px;
+    border-radius: 14px;
+  }
+
+  .room-block {
+    gap: 8px;
+    padding: 10px;
+  }
+
+  .room-indicator {
+    width: 8px;
+    height: 8px;
+  }
+
+  .room-name {
+    font-size: 18px;
+  }
+
+  .time-block {
+    padding: 10px 14px;
+  }
+
+  .time-value {
+    font-size: 20px;
+  }
+
+  .reservation-content {
+    gap: 7px;
+    padding: 10px 18px;
+  }
+
+  .reservation-title {
+    font-size: 19px;
+  }
+
+  .reservation-meta {
+    gap: 22px;
+  }
+
+  .meta-item {
+    gap: 6px;
+    font-size: 14px;
+  }
+
+  .meta-icon {
+    width: 16px;
+    height: 16px;
+  }
+
+  .reservation-actions {
+    gap: 6px;
+    padding: 8px;
+  }
+
+  .edit-button,
+  .cancel-button {
+    min-height: 27px;
+    font-size: 13px;
+  }
+}
+
+@media (max-width: 760px) {
+  .reservation-card {
+    grid-template-columns: 72px minmax(0, 1fr) 48px;
+    min-height: 74px;
+  }
+
+  .room-block {
+    grid-row: 1 / span 2;
+  }
+
+  .time-block {
+    grid-column: 2;
+    justify-content: flex-start;
+    padding: 8px 10px 2px;
+    border-right: 0;
+    background: #ffffff;
+  }
+
+  .reservation-content {
+    grid-column: 2;
+    padding: 2px 10px 8px;
+  }
+
+  .reservation-title {
+    font-size: 14px;
+  }
+
+  .reservation-meta {
+    gap: 10px;
+  }
+
+  .reservation-actions {
+    grid-column: 3;
+    grid-row: 1 / span 2;
+  }
 }
 </style>
