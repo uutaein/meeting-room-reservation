@@ -1,5 +1,5 @@
 <template>
-  <main class="dashboard">
+  <main class="dashboard" :data-wake-lock-active="wakeLockActive">
     <div class="dashboard-top">
       <header class="dashboard-header-simple">
         <button class="primary-button-huge" type="button" @click="openCreateModal">
@@ -28,6 +28,7 @@
     <section v-else>
       <ReservationDayList
         :dailyReservations="previewDailyReservations"
+        :currentDate="currentDateText"
         :loading="loading"
         :submitting="submitting"
         @edit-reservation="openUpdateModal"
@@ -108,7 +109,7 @@
 </template>
 
 <script setup>
-import { computed, onMounted, ref } from "vue";
+import { computed, onMounted, onUnmounted, ref } from "vue";
 import {
   createReservation,
   fetchReservationsByDate,
@@ -122,9 +123,10 @@ import ReservationUpdateModal from "./ReservationUpdateModal.vue";
 import { applyReservationPreviewData } from "../dev/reservationPreviewData.js";
 
 const DEFAULT_BUSINESS_DAY_COUNT = 10;
-const today = toDateInputValue(new Date());
+const AUTO_REFRESH_INTERVAL_MS = 30 * 60 * 1000;
+const currentDateText = ref(toDateInputValue(new Date()));
 
-const baseDate = ref(today);
+const baseDate = ref(currentDateText.value);
 const businessDayCount = ref(DEFAULT_BUSINESS_DAY_COUNT);
 const dailyReservations = ref([]);
 const loading = ref(false);
@@ -139,7 +141,13 @@ const isCancelConfirmOpen = ref(false);
 const cancelTarget = ref(null);
 const toastMessage = ref("");
 const toastType = ref("success");
+const wakeLockActive = ref(false);
 let toastTimer = null;
+let autoRefreshTimer = null;
+let dateRolloverTimer = null;
+let isRefreshingReservations = false;
+let isDashboardMounted = false;
+let wakeLockSentinel = null;
 
 const periodRangeText = computed(() => {
   if (dailyReservations.value.length === 0) {
@@ -168,7 +176,35 @@ const cancelConfirmMessage = computed(() => {
 });
 
 onMounted(() => {
+  isDashboardMounted = true;
   loadReservations();
+  autoRefreshTimer = window.setInterval(refreshDashboard, AUTO_REFRESH_INTERVAL_MS);
+  scheduleDateRollover();
+  document.addEventListener("visibilitychange", handleVisibilityChange);
+  window.addEventListener("pointerdown", requestScreenWakeLock);
+  window.addEventListener("keydown", requestScreenWakeLock);
+  requestScreenWakeLock();
+});
+
+onUnmounted(() => {
+  isDashboardMounted = false;
+
+  if (autoRefreshTimer) {
+    window.clearInterval(autoRefreshTimer);
+  }
+
+  if (dateRolloverTimer) {
+    window.clearTimeout(dateRolloverTimer);
+  }
+
+  if (toastTimer) {
+    window.clearTimeout(toastTimer);
+  }
+
+  document.removeEventListener("visibilitychange", handleVisibilityChange);
+  window.removeEventListener("pointerdown", requestScreenWakeLock);
+  window.removeEventListener("keydown", requestScreenWakeLock);
+  releaseScreenWakeLock();
 });
 
 function openCreateModal() {
@@ -215,7 +251,8 @@ async function handleCreateSubmit(formData) {
   try {
     await createReservation(formData);
     showToast("예약이 등록되었습니다.");
-    baseDate.value = today;
+    currentDateText.value = toDateInputValue(new Date());
+    baseDate.value = currentDateText.value;
     isCreateModalOpen.value = false;
     await loadReservations();
   } catch (error) {
@@ -264,10 +301,18 @@ async function confirmCancelReservation() {
   }
 }
 
-async function loadReservations() {
-  loading.value = true;
-  errorMessage.value = "";
-  dailyReservations.value = [];
+async function loadReservations({ silent = false } = {}) {
+  if (isRefreshingReservations) {
+    return;
+  }
+
+  isRefreshingReservations = true;
+
+  if (!silent) {
+    loading.value = true;
+    errorMessage.value = "";
+    dailyReservations.value = [];
+  }
 
   try {
     const businessDays = getNextBusinessDays(baseDate.value, businessDayCount.value);
@@ -283,11 +328,95 @@ async function loadReservations() {
     );
 
     dailyReservations.value = results;
+    errorMessage.value = "";
   } catch (error) {
-    dailyReservations.value = [];
-    errorMessage.value = error.message;
+    if (silent) {
+      showToast("자동 새로고침에 실패했습니다.", "error");
+    } else {
+      dailyReservations.value = [];
+      errorMessage.value = error.message;
+    }
   } finally {
-    loading.value = false;
+    if (!silent) {
+      loading.value = false;
+    }
+
+    isRefreshingReservations = false;
+  }
+}
+
+async function refreshDashboard() {
+  const latestDateText = toDateInputValue(new Date());
+  const dateChanged = latestDateText !== currentDateText.value;
+
+  if (dateChanged) {
+    currentDateText.value = latestDateText;
+    baseDate.value = latestDateText;
+  }
+
+  await loadReservations({ silent: true });
+  requestScreenWakeLock();
+}
+
+function scheduleDateRollover() {
+  if (dateRolloverTimer) {
+    window.clearTimeout(dateRolloverTimer);
+  }
+
+  const now = new Date();
+  const nextDay = new Date(now);
+  nextDay.setHours(24, 0, 1, 0);
+
+  dateRolloverTimer = window.setTimeout(async () => {
+    await refreshDashboard();
+
+    if (isDashboardMounted) {
+      scheduleDateRollover();
+    }
+  }, nextDay.getTime() - now.getTime());
+}
+
+function handleVisibilityChange() {
+  if (document.visibilityState === "visible") {
+    refreshDashboard();
+    requestScreenWakeLock();
+  }
+}
+
+async function requestScreenWakeLock() {
+  if (
+    !isDashboardMounted ||
+    !("wakeLock" in navigator) ||
+    document.visibilityState !== "visible" ||
+    (wakeLockSentinel && !wakeLockSentinel.released)
+  ) {
+    return;
+  }
+
+  try {
+    const sentinel = await navigator.wakeLock.request("screen");
+    wakeLockSentinel = sentinel;
+    wakeLockActive.value = true;
+
+    sentinel.addEventListener("release", () => {
+      if (wakeLockSentinel === sentinel) {
+        wakeLockSentinel = null;
+        wakeLockActive.value = false;
+      }
+    });
+  } catch {
+    wakeLockSentinel = null;
+    wakeLockActive.value = false;
+  }
+}
+
+async function releaseScreenWakeLock() {
+  const sentinel = wakeLockSentinel;
+  wakeLockSentinel = null;
+  wakeLockActive.value = false;
+
+  if (sentinel && !sentinel.released) {
+    await sentinel.release();
   }
 }
 

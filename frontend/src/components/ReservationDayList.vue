@@ -85,9 +85,13 @@
 </template>
 
 <script setup>
-defineProps({
+const props = defineProps({
   dailyReservations: {
     type: Array,
+    required: true
+  },
+  currentDate: {
+    type: String,
     required: true
   },
   loading: {
@@ -119,16 +123,7 @@ function roomClass(roomId) {
 }
 
 function isToday(dateStr) {
-  if (!dateStr) return false;
-
-  const today = new Date();
-  const localToday = [
-    today.getFullYear(),
-    String(today.getMonth() + 1).padStart(2, "0"),
-    String(today.getDate()).padStart(2, "0")
-  ].join("-");
-
-  return dateStr === localToday;
+  return dateStr === props.currentDate;
 }
 
 function formatDateFriendly(dateStr) {

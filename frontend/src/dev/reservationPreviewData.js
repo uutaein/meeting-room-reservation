@@ -1,5 +1,5 @@
 // Set this to false after the layout review.
-export const RESERVATION_PREVIEW_ENABLED = import.meta.env.DEV && true;
+export const RESERVATION_PREVIEW_ENABLED = import.meta.env.DEV && false;
 
 const PREVIEW_BUSINESS_DAY_COUNT = 5;
 
