@@ -1,15 +1,8 @@
 <template>
   <main class="dashboard">
-    <header class="dashboard-header">
-      <div>
-        <h1>17층 회의실 예약 현황</h1>
-        <p class="description">
-          기준 날짜를 포함해 선택한 영업일 수만큼 예약 현황을 조회합니다.
-        </p>
-      </div>
-
-      <button class="primary-button" type="button" @click="openCreateModal">
-        예약 등록
+    <header class="dashboard-header-simple">
+      <button class="primary-button-huge" type="button" @click="openCreateModal">
+        ➕ 새 예약 등록하기 (여기를 누르세요)
       </button>
     </header>
 
@@ -307,51 +300,76 @@ async function handleCancelReservation(day, reservation) {
 <style scoped>
 .dashboard {
   max-width: 1080px;
-  margin: 40px auto;
+  margin: 20px auto;
   padding: 24px;
   font-family: Arial, sans-serif;
 }
 
-.dashboard-header {
-  display: flex;
-  justify-content: space-between;
-  gap: 24px;
-  align-items: flex-start;
+.dashboard-header-simple {
   margin-bottom: 24px;
+  width: 100%;
 }
 
-.dashboard-header h1 {
-  margin: 0 0 8px;
-  font-size: 28px;
+.primary-button-huge {
+  width: 100%;
+  padding: 22px 32px;
+  font-size: 26px;
+  font-weight: 800;
+  color: #ffffff;
+  background: linear-gradient(135deg, hsl(215, 90%, 55%), hsl(225, 90%, 45%));
+  border: none;
+  border-radius: 16px;
+  cursor: pointer;
+  box-shadow: 0 8px 16px rgba(37, 99, 235, 0.25);
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
 }
 
-.description {
-  margin: 0;
-  color: #666;
+.primary-button-huge:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 24px rgba(37, 99, 235, 0.35);
+  background: linear-gradient(135deg, hsl(215, 95%, 58%), hsl(225, 95%, 48%));
+}
+
+.primary-button-huge:active {
+  transform: translateY(1px);
+  box-shadow: 0 4px 8px rgba(37, 99, 235, 0.2);
 }
 
 .message {
-  padding: 16px;
+  padding: 24px;
   border: 1px solid #ddd;
   background: #fafafa;
+  border-radius: 12px;
+  font-size: 20px;
+  text-align: center;
 }
 
 .success {
-  margin: 0 0 16px;
-  padding: 12px;
-  border: 1px solid #b7e4c7;
+  margin: 0 0 20px;
+  padding: 18px;
+  border: 2px solid #b7e4c7;
+  border-radius: 12px;
   background: #f0fff4;
   color: #1b7f3a;
+  font-size: 20px;
   font-weight: 700;
+  text-align: center;
 }
 
 .error {
-  margin: 16px 0 0;
-  padding: 16px;
-  border: 1px solid #f1c0c0;
+  margin: 20px 0 0;
+  padding: 18px;
+  border: 2px solid #f1c0c0;
+  border-radius: 12px;
   background: #fff5f5;
   color: #b00020;
+  font-size: 20px;
   font-weight: 700;
+  text-align: center;
 }
 
 .primary-button,

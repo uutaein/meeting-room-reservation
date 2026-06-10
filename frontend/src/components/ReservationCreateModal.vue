@@ -194,7 +194,8 @@ function handleSubmit() {
   align-items: center;
   justify-content: center;
   padding: 24px;
-  background: rgb(0 0 0 / 45%);
+  background: hsla(260, 25%, 8%, 0.45);
+  backdrop-filter: blur(10px);
   z-index: 1000;
 }
 
@@ -202,10 +203,23 @@ function handleSubmit() {
   width: min(760px, 100%);
   max-height: 90vh;
   overflow-y: auto;
-  padding: 20px;
-  border: 1px solid #ddd;
-  background: #fff;
-  box-shadow: 0 12px 40px rgb(0 0 0 / 20%);
+  padding: 24px;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  background: var(--bg);
+  box-shadow: var(--shadow-lg);
+  animation: modal-fade-in 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes modal-fade-in {
+  from {
+    transform: scale(0.95);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
 }
 
 .modal-header {
@@ -213,89 +227,145 @@ function handleSubmit() {
   justify-content: space-between;
   gap: 16px;
   align-items: center;
-  margin-bottom: 16px;
+  margin-bottom: 20px;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 12px;
 }
 
 .modal-header h2 {
   margin: 0;
-  font-size: 22px;
+  font-size: 26px;
+  font-weight: 800;
+  color: var(--text-h);
 }
 
 .icon-button {
-  width: 36px;
-  height: 36px;
-  border: 1px solid #ddd;
-  background: #fff;
-  font-size: 24px;
+  width: 42px;
+  height: 42px;
+  border: 2px solid var(--border);
+  border-radius: 12px;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 26px;
   line-height: 1;
   cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.icon-button:hover:not(:disabled) {
+  background: var(--border);
+  color: var(--text-h);
 }
 
 .reservation-form {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 20px;
 }
 
 .form-row {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 16px;
+  gap: 20px;
+}
+
+@media (max-width: 680px) {
+  .form-row {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
 }
 
 .form-field label {
   display: block;
   margin-bottom: 8px;
   font-weight: 700;
+  font-size: 18px;
+  color: var(--text-h);
 }
 
 .form-field input,
 .form-field select {
   width: 100%;
   box-sizing: border-box;
-  padding: 8px;
-  font-size: 16px;
+  padding: 12px 16px;
+  font-size: 18px;
+  font-weight: 600;
+  border: 2px solid var(--border);
+  border-radius: 12px;
+  background: var(--bg);
+  color: var(--text-h);
+  transition: border-color 0.2s, box-shadow 0.2s;
+  outline: none;
+}
+
+.form-field input:focus,
+.form-field select:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-bg);
 }
 
 .error {
   margin: 16px 0 0;
-  padding: 16px;
-  border: 1px solid #f1c0c0;
-  background: #fff5f5;
-  color: #b00020;
+  padding: 18px;
+  border: 2px solid hsla(0, 80%, 60%, 0.2);
+  border-radius: 12px;
+  background: hsla(0, 80%, 60%, 0.05);
+  color: hsl(0, 80%, 50%);
   font-weight: 700;
+  font-size: 18px;
+  text-align: center;
 }
 
 .modal-actions {
   display: flex;
   justify-content: flex-end;
-  gap: 8px;
-  padding-top: 8px;
+  gap: 12px;
+  padding-top: 16px;
+  border-top: 2px solid var(--border);
 }
 
 .primary-button,
 .secondary-button {
-  padding: 10px 16px;
-  font-size: 16px;
-  font-weight: 700;
+  padding: 14px 28px;
+  font-size: 18px;
+  font-weight: 800;
+  border-radius: 12px;
   cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .primary-button {
-  border: 1px solid #222;
-  background: #222;
+  border: 2px solid var(--accent);
+  background: var(--accent);
   color: #fff;
 }
 
+.primary-button:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-sm);
+  filter: brightness(1.05);
+}
+
 .secondary-button {
-  border: 1px solid #ccc;
-  background: #fff;
-  color: #222;
+  border: 2px solid var(--border);
+  background: transparent;
+  color: var(--text);
+}
+
+.secondary-button:hover:not(:disabled) {
+  background: var(--border);
+  color: var(--text-h);
 }
 
 .primary-button:disabled,
 .secondary-button:disabled {
   cursor: not-allowed;
-  opacity: 0.6;
+  opacity: 0.4;
+  transform: none;
+  box-shadow: none;
 }
 </style>
