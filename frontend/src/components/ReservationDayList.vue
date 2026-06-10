@@ -20,54 +20,48 @@
         이 날은 등록된 예약이 없습니다.
       </div>
 
-      <table v-else>
-        <thead>
-          <tr>
-            <th class="col-room">회의실</th>
-            <th class="col-time">시간</th>
-            <th class="col-owner">예약자</th>
-            <th class="col-attendees">인원</th>
-            <th class="col-purpose">목적</th>
-            <th class="col-action">관리</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr
-            v-for="reservation in day.reservations"
-            :key="reservation.id"
-          >
-            <td class="col-room">
+      <div v-else class="reservations-container">
+        <div
+          v-for="reservation in day.reservations"
+          :key="reservation.id"
+          class="reservation-row-card"
+        >
+          <div class="reservation-details">
+            <!-- 1순위: 목적 -->
+            <div class="info-purpose" :title="reservation.purpose">
+              {{ reservation.purpose }}
+            </div>
+            
+            <!-- 2, 3순위 및 회의실 명칭 -->
+            <div class="info-meta">
+              <span class="meta-time">⏰ {{ reservation.startTime }} ~ {{ reservation.endTime }}</span>
+              <span class="meta-owner">👤 {{ reservation.ownerName }}</span>
               <span :class="['room-badge', reservation.roomId.toLowerCase()]">
                 {{ getRoomName(reservation.roomId) }}
               </span>
-            </td>
-            <td class="col-time">{{ reservation.startTime }} ~ {{ reservation.endTime }}</td>
-            <td class="col-owner">{{ reservation.ownerName }}</td>
-            <td class="col-attendees">{{ reservation.attendees }}명</td>
-            <td class="col-purpose purpose-cell" :title="reservation.purpose">
-              {{ reservation.purpose }}
-            </td>
-            <td class="col-action action-cell">
-              <button
-                type="button"
-                class="edit-button"
-                :disabled="loading || submitting"
-                @click="$emit('edit-reservation', day, reservation)"
-              >
-                수정
-              </button>
-              <button
-                type="button"
-                class="cancel-button"
-                :disabled="loading || submitting"
-                @click="$emit('cancel-reservation', day, reservation)"
-              >
-                취소
-              </button>
-            </td>
-          </tr>
-        </tbody>
-      </table>
+            </div>
+          </div>
+
+          <div class="reservation-actions">
+            <button
+              type="button"
+              class="edit-button"
+              :disabled="loading || submitting"
+              @click="$emit('edit-reservation', day, reservation)"
+            >
+              수정
+            </button>
+            <button
+              type="button"
+              class="cancel-button"
+              :disabled="loading || submitting"
+              @click="$emit('cancel-reservation', day, reservation)"
+            >
+              취소
+            </button>
+          </div>
+        </div>
+      </div>
     </article>
   </div>
 </template>
@@ -178,61 +172,72 @@ function formatDateFriendly(dateStr) {
   font-weight: 600;
 }
 
-table {
-  width: 100%;
-  border-collapse: collapse;
-  table-layout: fixed;
+.reservations-container {
+  display: flex;
+  flex-direction: column;
+  padding: 16px;
+  gap: 12px;
 }
 
-th,
-td {
-  padding: 18px 12px;
-  border-bottom: 1px solid var(--border);
-  text-align: left;
+.reservation-row-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 18px 20px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  transition: all 0.2s;
+  gap: 16px;
+}
+
+.reservation-row-card:hover {
+  background: hsla(260, 10%, 96%, 0.3);
+  border-color: var(--accent-border);
+}
+
+.reservation-details {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex-grow: 1;
+  min-width: 0;
+}
+
+.info-purpose {
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--text-h);
+  line-height: 1.3;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.info-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 16px;
   font-size: 17px;
   font-weight: 600;
+  color: var(--text);
 }
 
-th {
-  background: hsla(260, 10%, 96%, 0.5);
+.meta-time {
   font-weight: 700;
+  color: hsl(265, 80%, 45%);
+}
+
+.meta-owner {
   color: var(--text-h);
-  font-size: 16px;
-}
-
-tbody tr:last-child td {
-  border-bottom: none;
-}
-
-.col-room {
-  width: 15%;
-}
-
-.col-time {
-  width: 22%;
-}
-
-.col-owner {
-  width: 12%;
-}
-
-.col-attendees {
-  width: 10%;
-}
-
-.col-purpose {
-  width: 23%;
-}
-
-.col-action {
-  width: 18%;
 }
 
 .room-badge {
   display: inline-block;
-  padding: 6px 12px;
-  border-radius: 10px;
-  font-size: 14px;
+  padding: 4px 10px;
+  border-radius: 8px;
+  font-size: 13px;
   font-weight: 700;
 }
 
@@ -248,16 +253,11 @@ tbody tr:last-child td {
   border: 2px solid hsla(275, 85%, 60%, 0.3);
 }
 
-.purpose-cell {
-  text-overflow: ellipsis;
-  overflow: hidden;
-  white-space: nowrap;
-  color: var(--text-h);
-}
-
-.action-cell {
-  text-align: left;
-  white-space: nowrap;
+.reservation-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
 }
 
 .edit-button,
@@ -274,7 +274,6 @@ tbody tr:last-child td {
   border: 2px solid var(--accent-border);
   background: transparent;
   color: var(--accent);
-  margin-right: 8px;
 }
 
 .edit-button:hover:not(:disabled) {
@@ -301,6 +300,5 @@ tbody tr:last-child td {
 .cancel-button:disabled {
   opacity: 0.4;
   cursor: not-allowed;
-  transform: none;
 }
 </style>
