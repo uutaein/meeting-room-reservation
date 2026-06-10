@@ -17,38 +17,14 @@
       {{ successMessage }}
     </p>
 
-    <section class="filter">
-      <div class="filter-item">
-        <label for="base-date">조회 기준일</label>
-        <input
-          id="base-date"
-          v-model="baseDate"
-          type="date"
-          :disabled="loading || submitting"
-          @change="loadReservations"
-        />
-      </div>
-
-      <div class="filter-item">
-        <label for="business-day-count">조회 범위</label>
-        <select
-          id="business-day-count"
-          v-model.number="businessDayCount"
-          @change="loadReservations"
-        >
-          <option :value="5">5영업일</option>
-          <option :value="10">10영업일</option>
-          <option :value="15">15영업일</option>
-          <option :value="20">20영업일</option>
-        </select>
-      </div>
-    </section>
-
-    <section class="period-summary">
-      <strong>조회 기간</strong>
-      <span>{{ periodRangeText }}</span>
-      <span class="summary-count">{{ businessDayCount }}영업일</span>
-    </section>
+    <ReservationFilter
+      v-model:baseDate="baseDate"
+      v-model:businessDayCount="businessDayCount"
+      :loading="loading"
+      :submitting="submitting"
+      :periodRangeText="periodRangeText"
+      @change="loadReservations"
+    />
 
     <section v-if="loading" class="message">
       예약 목록을 불러오는 중입니다.
@@ -58,235 +34,50 @@
       {{ errorMessage }}
     </section>
 
-    <section v-else class="day-list">
-      <article
-        v-for="day in dailyReservations"
-        :key="day.date"
-        class="day-card"
-      >
-        <header class="day-header">
-          <div>
-            <h2>{{ day.label }}</h2>
-            <span class="date">{{ day.date }}</span>
-          </div>
-
-          <span class="count">
-            {{ day.reservations.length }}건
-          </span>
-        </header>
-
-        <div v-if="day.reservations.length === 0" class="empty">
-          <td colspan="6" class="empty-reservation">
-            예약이 없습니다.
-          </td>
-        </div>
-
-        <table v-else>
-          <thead>
-            <tr>
-              <th>회의실</th>
-              <th>시간</th>
-              <th>예약자</th>
-              <th>인원</th>
-              <th>목적</th>
-              <th>관리</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr
-              v-for="reservation in day.reservations"
-              :key="reservation.id"
-            >
-              <td>{{ getRoomName(reservation.roomId) }}</td>
-              <td>{{ reservation.startTime }} ~ {{ reservation.endTime }}</td>
-              <td>{{ reservation.ownerName }}</td>
-              <td>{{ reservation.attendees }}명</td>
-              <td>{{ reservation.purpose }}</td>
-                <td>
-                <button type="button" class="update-button" @click="openUpdateModal(reservation)">수정</button>
-                <button type="button" class="cancel-button" @click="handleCancelReservation(day, reservation)">취소</button>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </article>
+    <section v-else>
+      <ReservationDayList
+        :dailyReservations="dailyReservations"
+        :loading="loading"
+        :submitting="submitting"
+        @edit-reservation="openUpdateModal"
+        @cancel-reservation="handleCancelReservation"
+      />
     </section>
 
-    <div
-      v-if="isCreateModalOpen"
-      class="modal-backdrop"
-      @click.self="closeCreateModal"
-    >
-      <section class="modal">
-        <header class="modal-header">
-          <h2>회의실 예약 등록</h2>
-          <button
-            class="icon-button"
-            type="button"
-            aria-label="예약 등록 창 닫기"
-            @click="closeCreateModal"
-          >
-            ×
-          </button>
-        </header>
+    <!-- Create Modal -->
+    <ReservationCreateModal
+      :isOpen="isCreateModalOpen"
+      :baseDate="baseDate"
+      :submitting="submitting"
+      :errorMessage="formErrorMessage"
+      @close="closeCreateModal"
+      @submit="handleCreateSubmit"
+    />
 
-        <form class="reservation-form" @submit.prevent="submitReservation">
-          <div class="form-row">
-            <div class="form-field">
-              <label for="room-id">회의실</label>
-              <select id="room-id" v-model="form.roomId" required>
-                <option value="ROOM_1">회의실 1 / 6명</option>
-                <option value="ROOM_2">회의실 2 / 12명</option>
-              </select>
-            </div>
-
-            <div class="form-field">
-              <label for="reservation-date">예약일</label>
-              <input
-                id="reservation-date"
-                v-model="form.reservationDate"
-                type="date"
-                required
-              />
-            </div>
-
-            <div class="form-field">
-              <label for="attendees">참석 인원</label>
-              <input
-                id="attendees"
-                v-model.number="form.attendees"
-                type="number"
-                min="1"
-                max="12"
-                required
-              />
-            </div>
-          </div>
-
-          <div class="form-row">
-            <div class="form-field">
-              <label for="start-time">시작 시간</label>
-              <input
-                id="start-time"
-                v-model="form.startTime"
-                type="time"
-                min="08:00"
-                max="20:00"
-                step="1800"
-                required
-              />
-            </div>
-
-            <div class="form-field">
-              <label for="end-time">종료 시간</label>
-              <input
-                id="end-time"
-                v-model="form.endTime"
-                type="time"
-                min="08:00"
-                max="20:00"
-                step="1800"
-                required
-              />
-            </div>
-
-            <div class="form-field">
-              <label for="owner-name">예약자명</label>
-              <input
-                id="owner-name"
-                v-model.trim="form.ownerName"
-                type="text"
-                minlength="2"
-                maxlength="6"
-                required
-              />
-            </div>
-          </div>
-
-          <div class="form-field">
-            <label for="purpose">회의 목적</label>
-            <input
-              id="purpose"
-              v-model.trim="form.purpose"
-              type="text"
-              maxlength="30"
-              required
-            />
-          </div>
-
-          <p v-if="formErrorMessage" class="error">
-            {{ formErrorMessage }}
-          </p>
-
-          <div class="modal-actions">
-            <button
-              class="secondary-button"
-              type="button"
-              :disabled="submitting"
-              @click="closeCreateModal"
-            >
-              취소
-            </button>
-
-            <button class="primary-button" type="submit" :disabled="submitting">
-              {{ submitting ? "등록 중..." : "등록" }}
-            </button>
-          </div>
-        </form>
-      </section>
-    </div>
-    <!-- 예약 수정 feature/vue-reservation-update -->
-    <div
-      v-if="isUpdateModalOpen"
-      class="modal-backdrop"
-      @click.self="closeUpdateModal"
-    >
-      <section class="modal">
-        <header class="modal-header">
-          <h2>회의실 예약 수정</h2>
-          <button
-            class="icon-button"
-            type="button"
-            aria-label="예약 수정 창 닫기"
-            @click="closeUpdateModal"
-          >
-            ×
-          </button>
-        </header>
-
-        <div class="reservation-form">
-          <p>선택한 예약 ID: {{ updateForm.id }}</p>
-
-          <div class="modal-actions">
-            <button
-              class="secondary-button"
-              type="button"
-              @click="closeUpdateModal"
-            >
-              취소
-            </button>
-
-            <button
-              class="primary-button"
-              type="button"
-              @click="console.log(updateForm)"
-            >
-              저장
-            </button>
-          </div>
-        </div>
-      </section>
-    </div>
+    <!-- Update Modal -->
+    <ReservationUpdateModal
+      :isOpen="isUpdateModalOpen"
+      :reservation="selectedReservation"
+      :submitting="submitting"
+      :errorMessage="updateErrorMessage"
+      @close="closeUpdateModal"
+      @submit="handleUpdateSubmit"
+    />
   </main>
 </template>
 
 <script setup>
-import { computed, onMounted, reactive, ref } from "vue";
+import { computed, onMounted, ref } from "vue";
 import {
   createReservation,
   fetchReservationsByDate,
-  cancelReservation
+  cancelReservation,
+  updateReservation
 } from "../api/reservationApi.js";
+import ReservationFilter from "./ReservationFilter.vue";
+import ReservationDayList from "./ReservationDayList.vue";
+import ReservationCreateModal from "./ReservationCreateModal.vue";
+import ReservationUpdateModal from "./ReservationUpdateModal.vue";
 
 const DEFAULT_BUSINESS_DAY_COUNT = 10;
 
@@ -299,31 +90,11 @@ const loading = ref(false);
 const submitting = ref(false);
 const errorMessage = ref("");
 const formErrorMessage = ref("");
+const updateErrorMessage = ref("");
 const successMessage = ref("");
 const isCreateModalOpen = ref(false);
-const isUpdateModalOpen = ref(false)
-const selectedReservation = ref(null)
-
-const form = reactive({
-  roomId: "ROOM_1",
-  reservationDate: today,
-  startTime: "10:00",
-  endTime: "11:00",
-  ownerName: "",
-  attendees: 1,
-  purpose: ""
-});
-
-const updateForm = ref({
-  id: null,
-  roomId: '',
-  reservationDate: '',
-  startTime: '',
-  endTime: '',
-  ownerName: '',
-  attendees: 1,
-  purpose: '',
-})
+const isUpdateModalOpen = ref(false);
+const selectedReservation = ref(null);
 
 const periodRangeText = computed(() => {
   if (dailyReservations.value.length === 0) {
@@ -343,7 +114,6 @@ onMounted(() => {
 function openCreateModal() {
   formErrorMessage.value = "";
   successMessage.value = "";
-  form.reservationDate = baseDate.value;
   isCreateModalOpen.value = true;
 }
 
@@ -351,35 +121,61 @@ function closeCreateModal() {
   if (submitting.value) {
     return;
   }
-
   formErrorMessage.value = "";
   isCreateModalOpen.value = false;
 }
 
-async function submitReservation() {
+function openUpdateModal(day, reservation) {
+  updateErrorMessage.value = "";
+  successMessage.value = "";
+  selectedReservation.value = { ...reservation, reservationDate: day.date };
+  isUpdateModalOpen.value = true;
+}
+
+function closeUpdateModal() {
+  if (submitting.value) {
+    return;
+  }
+  updateErrorMessage.value = "";
+  selectedReservation.value = null;
+  isUpdateModalOpen.value = false;
+}
+
+async function handleCreateSubmit(formData) {
   submitting.value = true;
   formErrorMessage.value = "";
   successMessage.value = "";
 
   try {
-    await createReservation({
-      roomId: form.roomId,
-      reservationDate: form.reservationDate,
-      startTime: form.startTime,
-      endTime: form.endTime,
-      ownerName: form.ownerName,
-      attendees: form.attendees,
-      purpose: form.purpose
-    });
+    await createReservation(formData);
 
     successMessage.value = "예약이 등록되었습니다.";
-    baseDate.value = form.reservationDate;
+    baseDate.value = formData.reservationDate;
     isCreateModalOpen.value = false;
 
-    resetFormAfterSubmit();
     await loadReservations();
   } catch (error) {
     formErrorMessage.value = error.message;
+  } finally {
+    submitting.value = false;
+  }
+}
+
+async function handleUpdateSubmit(id, formData) {
+  submitting.value = true;
+  updateErrorMessage.value = "";
+  successMessage.value = "";
+
+  try {
+    await updateReservation(id, formData);
+
+    successMessage.value = "예약이 변경되었습니다.";
+    isUpdateModalOpen.value = false;
+    selectedReservation.value = null;
+
+    await loadReservations();
+  } catch (error) {
+    updateErrorMessage.value = error.message;
   } finally {
     submitting.value = false;
   }
@@ -414,16 +210,6 @@ async function loadReservations() {
   } finally {
     loading.value = false;
   }
-}
-
-function resetFormAfterSubmit() {
-  form.roomId = "ROOM_1";
-  form.reservationDate = baseDate.value;
-  form.startTime = "10:00";
-  form.endTime = "11:00";
-  form.ownerName = "";
-  form.attendees = 1;
-  form.purpose = "";
 }
 
 function getNextBusinessDays(dateText, count) {
@@ -489,7 +275,6 @@ function getRoomName(roomId) {
   return roomId;
 }
 
-// feature/vue-reservation-cancel
 async function handleCancelReservation(day, reservation) {
   const confirmed = window.confirm(
     `${day.date} ${reservation.startTime}~${reservation.endTime} ${getRoomName(
@@ -517,26 +302,6 @@ async function handleCancelReservation(day, reservation) {
     loading.value = false;
   }
 }
-
-// feature/vue-reservation-update
-function openUpdateModal(reservation) {
-  updateForm.value = {
-    id: reservation.id,
-    roomId: reservation.roomId,
-    reservationDate: reservation.reservationDate ?? reservation.date ?? '',
-    startTime: reservation.startTime,
-    endTime: reservation.endTime,
-    ownerName: reservation.ownerName,
-    attendees: reservation.attendees,
-    purpose: reservation.purpose,
-  }
-
-  isUpdateModalOpen.value = true
-}
-function closeUpdateModal() {
-  isUpdateModalOpen.value = false
-}
-
 </script>
 
 <style scoped>
@@ -565,44 +330,6 @@ function closeUpdateModal() {
   color: #666;
 }
 
-.filter {
-  display: flex;
-  gap: 16px;
-  align-items: flex-end;
-  margin-bottom: 16px;
-}
-
-.filter-item label {
-  display: block;
-  margin-bottom: 8px;
-  font-weight: 700;
-}
-
-.filter-item input,
-.filter-item select {
-  padding: 8px;
-  font-size: 16px;
-}
-
-.period-summary {
-  display: flex;
-  gap: 12px;
-  align-items: center;
-  margin-bottom: 24px;
-  padding: 12px 16px;
-  border: 1px solid #ddd;
-  background: #fafafa;
-}
-
-.summary-count {
-  padding: 4px 10px;
-  border-radius: 999px;
-  background: #fff;
-  border: 1px solid #ddd;
-  font-size: 13px;
-  font-weight: 700;
-}
-
 .message {
   padding: 16px;
   border: 1px solid #ddd;
@@ -625,71 +352,6 @@ function closeUpdateModal() {
   background: #fff5f5;
   color: #b00020;
   font-weight: 700;
-}
-
-.day-list {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-}
-
-.day-card {
-  border: 1px solid #ddd;
-  background: #fff;
-}
-
-.day-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 16px;
-  background: #f5f5f5;
-  border-bottom: 1px solid #ddd;
-}
-
-.day-header h2 {
-  margin: 0 0 4px;
-  font-size: 20px;
-}
-
-.date {
-  color: #555;
-  font-weight: 700;
-}
-
-.count {
-  padding: 4px 10px;
-  border-radius: 999px;
-  background: #fff;
-  border: 1px solid #ddd;
-  font-size: 14px;
-  font-weight: 700;
-}
-
-.empty {
-  padding: 16px;
-  color: #666;
-  background: #fafafa;
-}
-
-table {
-  width: 100%;
-  border-collapse: collapse;
-}
-
-th,
-td {
-  padding: 12px;
-  border-bottom: 1px solid #eee;
-  text-align: left;
-}
-
-th {
-  background: #fafafa;
-}
-
-tbody tr:last-child td {
-  border-bottom: none;
 }
 
 .primary-button,
@@ -716,118 +378,5 @@ tbody tr:last-child td {
 .secondary-button:disabled {
   cursor: not-allowed;
   opacity: 0.6;
-}
-
-.modal-backdrop {
-  position: fixed;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 24px;
-  background: rgb(0 0 0 / 45%);
-  z-index: 1000;
-}
-
-.modal {
-  width: min(760px, 100%);
-  max-height: 90vh;
-  overflow-y: auto;
-  padding: 20px;
-  border: 1px solid #ddd;
-  background: #fff;
-  box-shadow: 0 12px 40px rgb(0 0 0 / 20%);
-}
-
-.modal-header {
-  display: flex;
-  justify-content: space-between;
-  gap: 16px;
-  align-items: center;
-  margin-bottom: 16px;
-}
-
-.modal-header h2 {
-  margin: 0;
-  font-size: 22px;
-}
-
-.icon-button {
-  width: 36px;
-  height: 36px;
-  border: 1px solid #ddd;
-  background: #fff;
-  font-size: 24px;
-  line-height: 1;
-  cursor: pointer;
-}
-
-.reservation-form {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.form-row {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 16px;
-}
-
-.form-field label {
-  display: block;
-  margin-bottom: 8px;
-  font-weight: 700;
-}
-
-.form-field input,
-.form-field select {
-  width: 100%;
-  box-sizing: border-box;
-  padding: 8px;
-  font-size: 16px;
-}
-
-.modal-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 8px;
-  padding-top: 8px;
-}
-
-.action-cell {
-  text-align: center;
-  white-space: nowrap;
-}
-
-.update-button {
-  border: 1px solid #2563eb;
-  background: #fff;
-  color: #2563eb;
-  border-radius: 6px;
-  padding: 6px 10px;
-  font-size: 13px;
-  cursor: pointer;
-  margin-right: 6px;
-}
-
-.cancel-button {
-  border: 1px solid #dc2626;
-  background: #fff;
-  color: #dc2626;
-  border-radius: 6px;
-  padding: 6px 10px;
-  font-size: 13px;
-  cursor: pointer;
-}
-
-.cancel-button:hover:not(:disabled) {
-  background: #dc2626;
-  color: #fff;
-}
-
-.cancel-button:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
 }
 </style>
