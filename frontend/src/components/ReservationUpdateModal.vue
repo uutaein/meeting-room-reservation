@@ -57,7 +57,7 @@
           </div>
         </div>
 
-        <div class="form-row">
+        <div class="form-row-2col">
           <div class="form-field">
             <label for="update-start-time">시작 시간</label>
             <div class="time-picker-custom">
@@ -81,7 +81,9 @@
               </select>
             </div>
           </div>
+        </div>
 
+        <div class="form-row-2col">
           <div class="form-field">
             <label for="update-owner-name">예약자명</label>
             <input
@@ -90,20 +92,6 @@
               type="text"
               minlength="2"
               maxlength="6"
-              required
-              :disabled="submitting"
-            />
-          </div>
-        </div>
-
-        <div class="form-row">
-          <div class="form-field">
-            <label for="update-purpose">회의 목적</label>
-            <input
-              id="update-purpose"
-              v-model.trim="form.purpose"
-              type="text"
-              maxlength="30"
               required
               :disabled="submitting"
             />
@@ -117,9 +105,20 @@
               type="text"
               required
               :disabled="submitting"
-              placeholder="숫자와 -만 입력 (예: 204-1234)"
             />
           </div>
+        </div>
+
+        <div class="form-field">
+          <label for="update-purpose">회의 목적</label>
+          <input
+            id="update-purpose"
+            v-model.trim="form.purpose"
+            type="text"
+            maxlength="30"
+            required
+            :disabled="submitting"
+          />
         </div>
 
         <p v-if="errorMessage || localError" class="error">
@@ -243,7 +242,7 @@ function adjustDate(direction) {
 
 function handleSubmit() {
   if (form.roomId === "ROOM_1" && form.attendees >= 6) {
-    localError.value = "6명 이상 예약하려할때 회의실을 이용해주세요";
+    localError.value = "6명 이상은 회의실을 이용해주세요";
     return;
   }
   const contactClean = String(form.contact).trim();
@@ -342,8 +341,15 @@ function handleSubmit() {
   gap: 20px;
 }
 
+.form-row-2col {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20px;
+}
+
 @media (max-width: 680px) {
-  .form-row {
+  .form-row,
+  .form-row-2col {
     grid-template-columns: 1fr;
     gap: 16px;
   }
