@@ -57,3 +57,32 @@ export async function createReservation(input) {
 
   return body;
 }
+
+// feature/vue-reservation-cancel
+export async function cancelReservation(id) {
+  let response;
+
+  try {
+    response = await fetch(`${API_BASE_URL}/reservations/${id}/cancel`, {
+      method: "PATCH"
+    });
+  } catch (error) {
+    throw new Error(
+      "예약 서버에 연결할 수 없습니다. 백엔드 서버가 실행 중인지 확인해주세요."
+    );
+  }
+
+  let body;
+
+  try {
+    body = await response.json();
+  } catch (error) {
+    throw new Error("예약 서버 응답을 해석할 수 없습니다.");
+  }
+
+  if (!response.ok) {
+    throw new Error(body.message || "예약 취소에 실패했습니다.");
+  }
+
+  return body;
+}

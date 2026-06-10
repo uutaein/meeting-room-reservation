@@ -87,6 +87,7 @@
               <th>인원</th>
               <th>목적</th>
               <th>상태</th>
+              <th>관리</th>
             </tr>
           </thead>
           <tbody>
@@ -100,6 +101,15 @@
               <td>{{ reservation.attendees }}명</td>
               <td>{{ reservation.purpose }}</td>
               <td>{{ reservation.status }}</td>
+                <td>
+                <button
+                  type="button"
+                  class="cancel-button"
+                  @click="handleCancelReservation(day, reservation)"
+                >
+                  취소
+                </button>
+              </td>
             </tr>
           </tbody>
         </table>
@@ -236,7 +246,8 @@
 import { computed, onMounted, reactive, ref } from "vue";
 import {
   createReservation,
-  fetchReservationsByDate
+  fetchReservationsByDate,
+  cancelReservation
 } from "../api/reservationApi.js";
 
 const DEFAULT_BUSINESS_DAY_COUNT = 10;
@@ -426,6 +437,36 @@ function getRoomName(roomId) {
 
   return roomId;
 }
+
+// feature/vue-reservation-cancel
+async function handleCancelReservation(day, reservation) {
+  const confirmed = window.confirm(
+    `${day.date} ${reservation.startTime}~${reservation.endTime} ${getRoomName(
+      reservation.roomId
+    )} 예약을 취소하시겠습니까?`
+  );
+
+  if (!confirmed) {
+    return;
+  }
+
+  loading.value = true;
+  errorMessage.value = "";
+  successMessage.value = "";
+
+  try {
+    await cancelReservation(reservation.id);
+
+    successMessage.value = "예약이 취소되었습니다.";
+
+    await loadReservations();
+  } catch (error) {
+    errorMessage.value = error.message || "예약 취소에 실패했습니다.";
+  } finally {
+    loading.value = false;
+  }
+}
+
 </script>
 
 <style scoped>

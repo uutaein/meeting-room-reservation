@@ -15,7 +15,7 @@
     "test:bdd:cancel": "cucumber-js features/**/*.feature --tags \"@REQ-RSV-204-cancel or @REQ-RSV-404-cancel-not-found or @REQ-RSV-409-cancel-already-cancelled or @REQ-RSV-201-after-cancel-rebook\" --require features/**/*.js --format progress"
   },
   "devDependencies": {
-    "@cucumber/cucumber": "^12.2.0",
+    "@cucumber/cucumber": "^12.9.0",
     "concurrently": "^9.2.1"
   }
 }
