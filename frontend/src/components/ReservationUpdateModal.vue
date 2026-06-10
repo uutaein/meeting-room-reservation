@@ -243,6 +243,13 @@ function handleSubmit() {
   gap: 16px;
 }
 
+@media (max-width: 680px) {
+  .form-row {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+}
+
 .form-field label {
   display: block;
   margin-bottom: 8px;

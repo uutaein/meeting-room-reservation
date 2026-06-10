@@ -23,12 +23,12 @@
       <table v-else>
         <thead>
           <tr>
-            <th>회의실</th>
-            <th>시간</th>
-            <th>예약자</th>
-            <th>인원</th>
-            <th>목적</th>
-            <th>관리</th>
+            <th class="col-room">회의실</th>
+            <th class="col-time">시간</th>
+            <th class="col-owner">예약자</th>
+            <th class="col-attendees">인원</th>
+            <th class="col-purpose">목적</th>
+            <th class="col-action">관리</th>
           </tr>
         </thead>
         <tbody>
@@ -36,12 +36,14 @@
             v-for="reservation in day.reservations"
             :key="reservation.id"
           >
-            <td>{{ getRoomName(reservation.roomId) }}</td>
-            <td>{{ reservation.startTime }} ~ {{ reservation.endTime }}</td>
-            <td>{{ reservation.ownerName }}</td>
-            <td>{{ reservation.attendees }}명</td>
-            <td>{{ reservation.purpose }}</td>
-            <td class="action-cell">
+            <td class="col-room">{{ getRoomName(reservation.roomId) }}</td>
+            <td class="col-time">{{ reservation.startTime }} ~ {{ reservation.endTime }}</td>
+            <td class="col-owner">{{ reservation.ownerName }}</td>
+            <td class="col-attendees">{{ reservation.attendees }}명</td>
+            <td class="col-purpose purpose-cell" :title="reservation.purpose">
+              {{ reservation.purpose }}
+            </td>
+            <td class="col-action action-cell">
               <button
                 type="button"
                 class="edit-button"
@@ -147,21 +149,54 @@ function getRoomName(roomId) {
 table {
   width: 100%;
   border-collapse: collapse;
+  table-layout: fixed;
 }
 
 th,
 td {
-  padding: 12px;
+  padding: 12px 6px;
   border-bottom: 1px solid #eee;
   text-align: left;
+  font-size: 14px;
 }
 
 th {
   background: #fafafa;
+  font-weight: 700;
 }
 
 tbody tr:last-child td {
   border-bottom: none;
+}
+
+.col-room {
+  width: 13%;
+}
+
+.col-time {
+  width: 21%;
+}
+
+.col-owner {
+  width: 13%;
+}
+
+.col-attendees {
+  width: 10%;
+}
+
+.col-purpose {
+  width: 25%;
+}
+
+.col-action {
+  width: 18%;
+}
+
+.purpose-cell {
+  text-overflow: ellipsis;
+  overflow: hidden;
+  white-space: nowrap;
 }
 
 .action-cell {
