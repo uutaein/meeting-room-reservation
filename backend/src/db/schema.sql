@@ -52,3 +52,26 @@ BEGIN
       THEN RAISE(ABORT, 'ERR_RESERVATION_OVERLAP')
     END;
 END;
+-- feature/reservation-update
+CREATE TRIGGER prevent_overlap_update
+BEFORE UPDATE
+ON reservations
+WHEN NEW.status = 'ACTIVE'
+BEGIN
+
+  SELECT
+    CASE
+      WHEN EXISTS (
+        SELECT 1
+        FROM reservations
+        WHERE id <> NEW.id
+          AND room_id = NEW.room_id
+          AND reservation_date = NEW.reservation_date
+          AND status = 'ACTIVE'
+          AND NEW.start_time < end_time
+          AND NEW.end_time > start_time
+      )
+      THEN RAISE(ABORT, 'ERR_RESERVATION_OVERLAP')
+    END;
+
+END;
