@@ -358,7 +358,7 @@ function showToast(message, type = "success") {
   max-width: 100%;
   width: 100%;
   margin: 0 auto;
-  padding: 12px 14px 18px;
+  padding: 92px 14px 18px;
   box-sizing: border-box;
   font-family: Arial, sans-serif;
 }
@@ -369,14 +369,17 @@ function showToast(message, type = "success") {
 }
 
 .dashboard-header-simple {
-  position: sticky;
-  top: 0;
-  z-index: 30;
+  position: fixed;
+  top: 12px;
+  left: 14px;
+  right: 14px;
+  z-index: 1200;
   margin-bottom: 10px;
   padding: 8px 0 10px;
   background: linear-gradient(to bottom, var(--bg) 86%, hsla(0, 0%, 100%, 0));
   backdrop-filter: blur(10px);
-  width: 100%;
+  width: auto;
+  max-width: calc(100% - 28px);
 }
 
 .primary-button-huge {
