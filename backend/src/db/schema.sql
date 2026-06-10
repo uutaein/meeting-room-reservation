@@ -24,7 +24,7 @@ CREATE TABLE IF NOT EXISTS reservations (
   FOREIGN KEY (room_id) REFERENCES rooms(id),
 
   CHECK (status IN ('ACTIVE', 'CANCELLED')),
-  CHECK (attendees >= 1 AND attendees <= 12)
+  CHECK (attendees >= 1)
 );
 
 CREATE INDEX IF NOT EXISTS idx_reservations_date_room_time
@@ -32,8 +32,8 @@ ON reservations (reservation_date, room_id, start_time, end_time);
 
 INSERT OR REPLACE INTO rooms (id, name, capacity, is_active)
 VALUES
-  ('ROOM_1', '서고', 6, 1),
-  ('ROOM_2', '회의실', 12, 1);
+  ('ROOM_1', '서고', 99999, 1),
+  ('ROOM_2', '회의실', 99999, 1);
 
 DROP TRIGGER IF EXISTS trg_reservation_no_overlap_insert;
 CREATE TRIGGER trg_reservation_no_overlap_insert

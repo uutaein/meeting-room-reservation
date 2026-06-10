@@ -101,11 +101,11 @@ function validateAttendees(attendees) {
     );
   }
 
-  if (attendees < 1 || attendees > 12) {
+  if (attendees < 1) {
     throwProblem(
       400,
       "ERR_ATTENDEES_RANGE",
-      "참석 인원은 1명 이상 12명 이하로 입력해야 합니다."
+      "참석 인원은 1명 이상이어야 합니다."
     );
   }
 }

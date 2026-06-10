@@ -50,7 +50,6 @@
               v-model.number="form.attendees"
               type="number"
               min="1"
-              max="12"
               required
               :disabled="submitting"
             />
@@ -242,8 +241,7 @@ function adjustDate(direction) {
 
 function handleSubmit() {
   if (form.roomId === "ROOM_1" && form.attendees >= 6) {
-    localError.value = "6명 이상은 회의실을 이용해주세요";
-    return;
+    alert("회의실을 선택해주세요");
   }
   const contactClean = String(form.contact).trim();
   if (!/^[0-9-]+$/.test(contactClean)) {
