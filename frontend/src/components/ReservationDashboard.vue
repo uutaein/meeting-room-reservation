@@ -343,10 +343,19 @@ async function openCancelConfirm(day, reservation) {
   cancelPurposeInput.value = "";
 
   if (reservation.recurringGroupId) {
-    submitting.value = true;
     try {
       const allReservations = await fetchRecurringReservations(reservation.recurringGroupId);
-      const info = getAffectedRecurringInfo(allReservations, day.date);
+      
+      // ACTIVE 상태인 전체 반복 예약 중 가장 빠른 날짜(첫 회차) 찾기
+      const sortedActiveReservations = allReservations
+        .filter(r => r.status === "ACTIVE")
+        .sort((a, b) => a.reservationDate.localeCompare(b.reservationDate));
+      
+      const minStartDate = sortedActiveReservations.length > 0 
+        ? sortedActiveReservations[0].reservationDate 
+        : day.date;
+
+      const info = getAffectedRecurringInfo(allReservations, minStartDate);
       
       recurringConfirmAction.value = "cancel";
       recurringConfirmTitle.value = reservation.recurringTitle || "";
@@ -355,14 +364,12 @@ async function openCancelConfirm(day, reservation) {
       affectedCount.value = info.count;
       affectedRange.value = info.range;
       recurringConfirmGroupId.value = reservation.recurringGroupId;
-      recurringConfirmStartDate.value = day.date;
+      recurringConfirmStartDate.value = minStartDate;
       recurringConfirmPayload.value = null;
       recurringConfirmError.value = "";
       isRecurringConfirmOpen.value = true;
     } catch (error) {
       showToast("반복 예약을 조회하는 데 실패했습니다.", "error");
-    } finally {
-      submitting.value = false;
     }
   } else {
     cancelTarget.value = { day, reservation };
