@@ -23,7 +23,7 @@
         <article
           v-for="reservation in day.reservations"
           :key="reservation.id"
-          :class="['reservation-card', { 'is-past': isPast(day.date, reservation.endTime) }]"
+          :class="['reservation-card', { 'is-past': isPast(day.date, reservation.startTime) }]"
         >
           <div :class="['room-block', roomClass(reservation.roomId)]">
             <span class="room-indicator" aria-hidden="true"></span>
@@ -38,7 +38,7 @@
 
           <div class="reservation-content">
             <div class="reservation-title" :title="reservation.purpose">
-              <span v-if="isPast(day.date, reservation.endTime)" class="sr-only">(회의 종료됨)</span>
+              <span v-if="isPast(day.date, reservation.startTime)" class="sr-only">(시작 시간 지남)</span>
               <span v-if="reservation.recurringGroupId" class="recurring-badge">반복</span>
               {{ reservation.purpose }}
             </div>
@@ -64,8 +64,8 @@
             <button
               type="button"
               class="edit-button"
-              :disabled="loading || submitting || reservation.isPreview || !!reservation.recurringGroupId || isPast(day.date, reservation.endTime)"
-              :title="reservation.isPreview ? '가상 데이터입니다.' : (reservation.recurringGroupId ? '반복 예약은 수정할 수 없습니다.' : (isPast(day.date, reservation.endTime) ? '지난 예약은 수정할 수 없습니다.' : ''))"
+              :disabled="loading || submitting || reservation.isPreview || !!reservation.recurringGroupId || isPast(day.date, reservation.startTime)"
+              :title="reservation.isPreview ? '가상 데이터입니다.' : (reservation.recurringGroupId ? '반복 예약은 수정할 수 없습니다.' : (isPast(day.date, reservation.startTime) ? '지난 예약은 수정할 수 없습니다.' : ''))"
               @click="$emit('edit-reservation', day, reservation)"
             >
               수정
@@ -73,8 +73,8 @@
             <button
               type="button"
               class="cancel-button"
-              :disabled="loading || submitting || reservation.isPreview || isPast(day.date, reservation.endTime)"
-              :title="reservation.isPreview ? '가상 데이터입니다.' : (isPast(day.date, reservation.endTime) ? '지난 예약은 취소할 수 없습니다.' : '')"
+              :disabled="loading || submitting || reservation.isPreview || isPast(day.date, reservation.startTime)"
+              :title="reservation.isPreview ? '가상 데이터입니다.' : (isPast(day.date, reservation.startTime) ? '지난 예약은 취소할 수 없습니다.' : '')"
               @click="$emit('cancel-reservation', day, reservation)"
             >
               취소

@@ -420,7 +420,7 @@ watch(
 
     isRecurring.value = false;
     form.roomId = "ROOM_1";
-    form.reservationDate = props.baseDate;
+    form.reservationDate = props.baseDate < minDate.value ? minDate.value : props.baseDate;
     form.startTime = "10:00";
     form.endTime = "11:00";
     startHour.value = "10";

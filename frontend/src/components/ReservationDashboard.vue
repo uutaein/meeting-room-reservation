@@ -149,7 +149,7 @@
           </p>
           
           <p class="guide-text">
-            이 예약을 취소하려면 회의목적 <strong class="target-title">{{ recurringConfirmPurpose }}</strong>{{ getPostposition(recurringConfirmPurpose, 'objective') }} 입력하세요.
+            이 예약을 {{ recurringConfirmAction === 'update' ? '수정' : '취소' }}하려면 반복 예약 제목 <strong class="target-title">{{ recurringConfirmTitle }}</strong>{{ getPostposition(recurringConfirmTitle, 'objective') }} 입력하세요.
           </p>
           
           <div class="form-field">
@@ -157,7 +157,7 @@
               id="recurring-title-confirm"
               v-model="recurringConfirmInput"
               type="text"
-              placeholder="회의목적 입력"
+              placeholder="반복 예약 제목 입력"
               :disabled="submitting"
               class="confirm-input"
             />
@@ -182,7 +182,7 @@
             id="recurring-confirm-submit"
             :class="['danger-button', { 'update-confirm-button': recurringConfirmAction === 'update' }]"
             type="button"
-            :disabled="submitting || recurringConfirmInput !== recurringConfirmPurpose"
+            :disabled="submitting || recurringConfirmInput !== recurringConfirmTitle"
             @click="submitRecurringConfirm"
           >
             {{ submitting ? "처리 중..." : (recurringConfirmAction === 'update' ? "수정 진행" : "취소 진행") }}
@@ -429,6 +429,16 @@ async function handleCreateSubmit(formData) {
       showToast("예약이 등록되었습니다.");
     }
     
+    const isWithinRange = dailyReservations.value.length > 0 &&
+      targetDate >= dailyReservations.value[0].date &&
+      targetDate <= dailyReservations.value[dailyReservations.value.length - 1].date;
+
+    if (!isWithinRange) {
+      baseDate.value = targetDate;
+      const selectedDate = parseLocalDate(targetDate);
+      manualSelectionWeek.value = getMondayOfWeek(selectedDate);
+    }
+
     isCreateModalOpen.value = false;
     await loadReservations();
   } catch (error) {
@@ -504,14 +514,14 @@ async function submitRecurringConfirm() {
   try {
     if (recurringConfirmAction.value === "update") {
       await updateRecurringReservation(recurringConfirmGroupId.value, {
-        titleConfirm: recurringConfirmTitle.value,
+        titleConfirm: recurringConfirmInput.value,
         startDate: recurringConfirmStartDate.value,
         ...recurringConfirmPayload.value
       });
       showToast("반복 예약이 수정되었습니다.");
     } else {
       await cancelRecurringReservation(recurringConfirmGroupId.value, {
-        titleConfirm: recurringConfirmTitle.value,
+        titleConfirm: recurringConfirmInput.value,
         startDate: recurringConfirmStartDate.value
       });
       showToast("반복 예약이 취소되었습니다.");
