@@ -24,6 +24,13 @@ export function validateCreateReservation(input) {
   validateDuration(input.startTime, input.endTime);
   validateBusinessHours(input.startTime, input.endTime);
   validateContact(input.contact);
+  if (!isValidDateFormatAndValue(input.reservationDate)) {
+    throwProblem(
+      400,
+      "ERR_DATE_FORMAT",
+      "예약일은 YYYY-MM-DD 형식의 유효한 날짜이어야 합니다."
+    );
+  }
   validateStartDateTime(input.reservationDate, input.startTime);
 }
 
@@ -72,7 +79,7 @@ export function validateListReservationQuery(query) {
     );
   }
 
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(query.date)) {
+  if (!isValidDateFormatAndValue(query.date)) {
     throwProblem(
       400,
       "ERR_DATE_FORMAT",
@@ -274,9 +281,18 @@ export function validateCreateRecurringReservation(input, isSubmit = true) {
     throwProblem(400, "ERR_REC_END_MONTH_FORMAT", "반복 종료월은 YYYY-MM 형식이어야 합니다.");
   }
 
+  const [endYear, endMonthNum] = input.endMonth.split("-").map(Number);
+  if (endMonthNum < 1 || endMonthNum > 12) {
+    throwProblem(400, "ERR_REC_END_MONTH_FORMAT", "반복 종료월은 YYYY-MM 형식의 유효한 월이어야 합니다.");
+  }
+
   // 4. 시작일 형식 및 필수 검증
   if (!input.reservationDate || !/^\d{4}-\d{2}-\d{2}$/.test(input.reservationDate)) {
     throwProblem(400, "ERR_REQUIRED_FIELD", "시작일이 올바르지 않습니다.");
+  }
+
+  if (!isValidDateFormatAndValue(input.reservationDate)) {
+    throwProblem(400, "ERR_DATE_FORMAT", "시작일은 YYYY-MM-DD 형식의 유효한 날짜이어야 합니다.");
   }
 
   // 5. 종료월이 시작일의 월보다 빠른지 검증
@@ -308,5 +324,18 @@ export function validateCreateRecurringReservation(input, isSubmit = true) {
     validateDuration(input.startTime, input.endTime);
     validateBusinessHours(input.startTime, input.endTime);
   }
+}
+
+function isValidDateFormatAndValue(dateStr) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+    return false;
+  }
+  const [year, month, day] = dateStr.split("-").map(Number);
+  if (month < 1 || month > 12) return false;
+  
+  const daysInMonth = new Date(year, month, 0).getDate();
+  if (day < 1 || day > daysInMonth) return false;
+  
+  return true;
 }
 

@@ -40,6 +40,7 @@
             <div class="reservation-title" :title="reservation.purpose">
               <span v-if="isPast(day.date, reservation.startTime)" class="sr-only">(시작 시간 지남)</span>
               <span v-if="reservation.recurringGroupId" class="recurring-badge">반복</span>
+              <span v-if="reservation.recurringGroupId" class="recurring-title-text">[{{ reservation.recurringTitle }}]</span>
               {{ reservation.purpose }}
             </div>
 
@@ -63,9 +64,9 @@
           <div class="reservation-actions">
             <button
               type="button"
-              class="edit-button"
-              :disabled="loading || submitting || reservation.isPreview || !!reservation.recurringGroupId || isPast(day.date, reservation.startTime)"
-              :title="reservation.isPreview ? '가상 데이터입니다.' : (reservation.recurringGroupId ? '반복 예약은 수정할 수 없습니다.' : (isPast(day.date, reservation.startTime) ? '지난 예약은 수정할 수 없습니다.' : ''))"
+              class="update-button"
+              :disabled="loading || submitting || reservation.isPreview || isPast(day.date, reservation.startTime)"
+              :title="reservation.isPreview ? '가상 데이터입니다.' : (isPast(day.date, reservation.startTime) ? '지난 예약은 수정할 수 없습니다.' : '')"
               @click="$emit('edit-reservation', day, reservation)"
             >
               수정
@@ -403,7 +404,7 @@ function formatDateFriendly(dateStr) {
   background: #fbfcfe;
 }
 
-.edit-button,
+.update-button,
 .cancel-button {
   min-height: 23px;
   padding: 2px 4px;
@@ -414,13 +415,13 @@ function formatDateFriendly(dateStr) {
   transition: background-color 0.18s, border-color 0.18s, color 0.18s;
 }
 
-.edit-button {
+.update-button {
   border: 1px solid rgba(109, 74, 255, 0.28);
   background: rgba(109, 74, 255, 0.06);
   color: #6240e8;
 }
 
-.edit-button:hover:not(:disabled) {
+.update-button:hover:not(:disabled) {
   border-color: rgba(109, 74, 255, 0.45);
   background: rgba(109, 74, 255, 0.13);
 }
@@ -436,7 +437,7 @@ function formatDateFriendly(dateStr) {
   background: rgba(239, 68, 68, 0.1);
 }
 
-.edit-button:disabled,
+.update-button:disabled,
 .cancel-button:disabled {
   cursor: not-allowed;
   opacity: 0.42;
@@ -536,7 +537,7 @@ function formatDateFriendly(dateStr) {
     padding: 10px;
   }
 
-  .edit-button,
+  .update-button,
   .cancel-button {
     min-height: 38px;
     font-size: 18px;
@@ -589,6 +590,12 @@ function formatDateFriendly(dateStr) {
   border-radius: 4px;
   font-size: 11px;
   font-weight: 800;
+  margin-right: 6px;
+  vertical-align: middle;
+}
+.recurring-title-text {
+  font-weight: 600;
+  color: #1e293b;
   margin-right: 6px;
   vertical-align: middle;
 }

@@ -354,7 +354,6 @@ function closeCreateModal() {
 }
 
 function openUpdateModal(day, reservation) {
-  if (reservation.recurringGroupId) return;
   updateErrorMessage.value = "";
   selectedReservation.value = { ...reservation, reservationDate: day.date };
   isUpdateModalOpen.value = true;
@@ -451,22 +450,29 @@ async function handleCreateSubmit(formData) {
 async function handleUpdateSubmit(id, formData) {
   if (selectedReservation.value && selectedReservation.value.recurringGroupId) {
     isUpdateModalOpen.value = false;
-    
-    const info = getAffectedRecurringInfo(
-      selectedReservation.value.recurringGroupId,
-      selectedReservation.value.reservationDate
-    );
-    
-    recurringConfirmAction.value = "update";
-    recurringConfirmTitle.value = selectedReservation.value.recurringTitle || "";
-    recurringConfirmInput.value = "";
-    affectedCount.value = info.count;
-    affectedRange.value = info.range;
-    recurringConfirmGroupId.value = selectedReservation.value.recurringGroupId;
-    recurringConfirmStartDate.value = selectedReservation.value.reservationDate;
-    recurringConfirmPayload.value = formData;
-    recurringConfirmError.value = "";
-    isRecurringConfirmOpen.value = true;
+    submitting.value = true;
+    try {
+      const allReservations = await fetchRecurringReservations(selectedReservation.value.recurringGroupId);
+      const info = getAffectedRecurringInfo(
+        allReservations,
+        selectedReservation.value.reservationDate
+      );
+      
+      recurringConfirmAction.value = "update";
+      recurringConfirmTitle.value = selectedReservation.value.recurringTitle || "";
+      recurringConfirmInput.value = "";
+      affectedCount.value = info.count;
+      affectedRange.value = info.range;
+      recurringConfirmGroupId.value = selectedReservation.value.recurringGroupId;
+      recurringConfirmStartDate.value = selectedReservation.value.reservationDate;
+      recurringConfirmPayload.value = formData;
+      recurringConfirmError.value = "";
+      isRecurringConfirmOpen.value = true;
+    } catch (error) {
+      showToast(error.message, "error");
+    } finally {
+      submitting.value = false;
+    }
   } else {
     submitting.value = true;
     updateErrorMessage.value = "";
