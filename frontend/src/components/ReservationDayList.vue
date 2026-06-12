@@ -63,8 +63,8 @@
             <button
               type="button"
               class="edit-button"
-              :disabled="loading || submitting || reservation.isPreview"
-              :title="reservation.isPreview ? '가상 데이터입니다.' : ''"
+              :disabled="loading || submitting || reservation.isPreview || !!reservation.recurringGroupId"
+              :title="reservation.isPreview ? '가상 데이터입니다.' : (reservation.recurringGroupId ? '반복 예약은 수정할 수 없습니다.' : '')"
               @click="$emit('edit-reservation', day, reservation)"
             >
               수정

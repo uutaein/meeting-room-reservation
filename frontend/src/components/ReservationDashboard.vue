@@ -322,6 +322,7 @@ function closeCreateModal() {
 }
 
 function openUpdateModal(day, reservation) {
+  if (reservation.recurringGroupId) return;
   updateErrorMessage.value = "";
   selectedReservation.value = { ...reservation, reservationDate: day.date };
   isUpdateModalOpen.value = true;
