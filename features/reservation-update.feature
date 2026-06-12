@@ -1,6 +1,7 @@
 @REQ-RSV-UPDATE
 Feature: 예약 수정
   사용자는 기존 ACTIVE 예약을 수정할 수 있다.
+  회의실 권고 정원을 넘는 수정은 경고 정책 대상이지만 예약 변경 자체는 가능하다.
 
   Scenario: 기존 예약을 정상 수정한다
     Given 기존 예약이 등록되어 있다
@@ -38,8 +39,9 @@ Feature: 예약 수정
     Then 응답 상태 코드는 200이다
     And 수정된 목적이 반환된다
 
-  # Scenario: 수정 후 참석 인원이 회의실 정원을 초과한다
-  #   Given 회의실 1에 기존 예약이 등록되어 있다
-  #   When 사용자가 참석 인원을 7명으로 수정한다
-  #   Then 응답 상태 코드는 400이다
-  #   And 오류 코드는 "ERR_CAPACITY_EXCEEDED"이다
+  @REQ-RSV-WARN-update-capacity-room1
+  Scenario: 수정 후 참석 인원이 회의실 1 권고 정원을 넘어도 수정은 성공한다
+    Given 회의실 1에 기존 예약이 등록되어 있다
+    When 사용자가 참석 인원을 7명으로 수정한다
+    Then 응답 상태 코드는 200이다
+    And 수정된 예약 정보가 반환된다
