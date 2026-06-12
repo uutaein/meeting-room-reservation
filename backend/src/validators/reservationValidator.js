@@ -1,3 +1,5 @@
+import { getMockTime } from "../routes/testRoutes.js";
+
 const REQUIRED_FIELDS = [
   "roomId",
   "reservationDate",
@@ -22,6 +24,43 @@ export function validateCreateReservation(input) {
   validateDuration(input.startTime, input.endTime);
   validateBusinessHours(input.startTime, input.endTime);
   validateContact(input.contact);
+  validateStartDateTime(input.reservationDate, input.startTime);
+}
+
+function validateStartDateTime(reservationDate, startTime) {
+  let now = new Date();
+
+  if (process.env.NODE_ENV === 'test') {
+    const mockTimeStr = getMockTime();
+    if (mockTimeStr) {
+      now = new Date(mockTimeStr);
+    } else {
+      return;
+    }
+  }
+
+  // KST (UTC +9) 변환 계산
+  const tzOffset = 9 * 60 * 60 * 1000;
+  const localTime = new Date(now.getTime() + tzOffset);
+  const isoStr = localTime.toISOString();
+  const todayStr = isoStr.substring(0, 10);
+  const currentBaseTimeStr = isoStr.substring(11, 16);
+
+  if (reservationDate < todayStr) {
+    throwProblem(
+      400,
+      "ERR_RESERVATION_START_PASSED",
+      "이미 지난 날짜나 시간에는 예약할 수 없습니다."
+    );
+  }
+
+  if (reservationDate === todayStr && startTime <= currentBaseTimeStr) {
+    throwProblem(
+      400,
+      "ERR_RESERVATION_START_PASSED",
+      "이미 지난 날짜나 시간에는 예약할 수 없습니다."
+    );
+  }
 }
 
 export function validateListReservationQuery(query) {
@@ -245,6 +284,9 @@ export function validateCreateRecurringReservation(input, isSubmit = true) {
   if (input.endMonth < startYearMonth) {
     throwProblem(400, "ERR_REC_END_MONTH_BEFORE_START", "반복 종료월은 시작월보다 빠를 수 없습니다.");
   }
+
+  // 첫 회차 시작 일시 검증 (미리보기 및 생성 시 모두 적용)
+  validateStartDateTime(input.reservationDate, input.startTime);
 
   if (isSubmit) {
     const tempInput = {

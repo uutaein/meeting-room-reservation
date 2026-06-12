@@ -13,7 +13,7 @@
         :loading="loading"
         :submitting="submitting"
         :periodRangeText="periodRangeText"
-        @change="loadReservations"
+        @change="handleFilterChange"
       />
     </div>
 
@@ -21,6 +21,10 @@
       예약 목록을 불러오는 중입니다.
     </section>
 
+    <section v-else-if="errorMessage === 'ERR_HOLIDAY_DATA_UNAVAILABLE'" class="error">
+      <div class="error-code">ERR_HOLIDAY_DATA_UNAVAILABLE</div>
+      <div class="error-msg">해당 연도의 대한민국 공휴일 데이터가 준비되지 않아 영업일을 조회할 수 없습니다.</div>
+    </section>
     <section v-else-if="errorMessage" class="error">
       {{ errorMessage }}
     </section>
@@ -29,6 +33,7 @@
       <ReservationDayList
         :dailyReservations="previewDailyReservations"
         :currentDate="currentDateText"
+        :currentTime="currentKstDateTime"
         :loading="loading"
         :submitting="submitting"
         @edit-reservation="openUpdateModal"
@@ -212,6 +217,17 @@ import ReservationDayList from "./ReservationDayList.vue";
 import ReservationCreateModal from "./ReservationCreateModal.vue";
 import ReservationUpdateModal from "./ReservationUpdateModal.vue";
 import { applyReservationPreviewData } from "../dev/reservationPreviewData.js";
+import holidayData from "../data/holidays.json";
+import {
+  toDateInputValue,
+  parseLocalDate,
+  addDays,
+  getDayLabel,
+  isBusinessDay,
+  getNextBusinessDays,
+  getMondayOfWeek,
+  getFirstBusinessDayOfWeek
+} from "../utils/businessDayUtils.js";
 
 const DEFAULT_BUSINESS_DAY_COUNT = 10;
 const AUTO_REFRESH_INTERVAL_MS = 30 * 60 * 1000;
@@ -234,9 +250,12 @@ const cancelPurposeInput = ref("");
 const toastMessage = ref("");
 const toastType = ref("success");
 const wakeLockActive = ref(false);
+const currentKstDateTime = ref("");
+const manualSelectionWeek = ref(null);
 let toastTimer = null;
 let autoRefreshTimer = null;
 let dateRolloverTimer = null;
+let timeUpdateTimer = null;
 let isRefreshingReservations = false;
 let isDashboardMounted = false;
 let wakeLockSentinel = null;
@@ -280,9 +299,16 @@ const cancelConfirmMessage = computed(() => {
   )} 예약을 취소할까요?`;
 });
 
-onMounted(() => {
+onMounted(async () => {
   isDashboardMounted = true;
-  loadReservations();
+  updateCurrentKstTime();
+  timeUpdateTimer = window.setInterval(updateCurrentKstTime, 20000);
+  try {
+    checkAndApplyWeeklyRollover();
+    await loadReservations();
+  } catch (error) {
+    errorMessage.value = error.code === "ERR_HOLIDAY_DATA_UNAVAILABLE" ? "ERR_HOLIDAY_DATA_UNAVAILABLE" : error.message;
+  }
   autoRefreshTimer = window.setInterval(refreshDashboard, AUTO_REFRESH_INTERVAL_MS);
   scheduleDateRollover();
   document.addEventListener("visibilitychange", handleVisibilityChange);
@@ -293,6 +319,10 @@ onMounted(() => {
 
 onUnmounted(() => {
   isDashboardMounted = false;
+
+  if (timeUpdateTimer) {
+    window.clearInterval(timeUpdateTimer);
+  }
 
   if (autoRefreshTimer) {
     window.clearInterval(autoRefreshTimer);
@@ -399,8 +429,6 @@ async function handleCreateSubmit(formData) {
       showToast("예약이 등록되었습니다.");
     }
     
-    // 성공 시 대시보드 기준일(baseDate)을 예약 생성일/시작일로 이동
-    baseDate.value = targetDate;
     isCreateModalOpen.value = false;
     await loadReservations();
   } catch (error) {
@@ -550,7 +578,7 @@ async function loadReservations({ silent = false } = {}) {
   }
 
   try {
-    const businessDays = getNextBusinessDays(baseDate.value, businessDayCount.value);
+    const businessDays = getNextBusinessDays(baseDate.value, businessDayCount.value, holidayData);
 
     const results = await Promise.all(
       businessDays.map(async (day) => {
@@ -569,7 +597,7 @@ async function loadReservations({ silent = false } = {}) {
       showToast("자동 새로고침에 실패했습니다.", "error");
     } else {
       dailyReservations.value = [];
-      errorMessage.value = error.message;
+      errorMessage.value = error.code === "ERR_HOLIDAY_DATA_UNAVAILABLE" ? "ERR_HOLIDAY_DATA_UNAVAILABLE" : error.message;
     }
   } finally {
     if (!silent) {
@@ -580,13 +608,41 @@ async function loadReservations({ silent = false } = {}) {
   }
 }
 
+function updateCurrentKstTime() {
+  const tzOffset = 9 * 60 * 60 * 1000;
+  const localTime = new Date(Date.now() + tzOffset);
+  currentKstDateTime.value = localTime.toISOString().substring(0, 16).replace("T", " ");
+}
+
+function checkAndApplyWeeklyRollover() {
+  const now = new Date();
+  const currentWeekMonday = getMondayOfWeek(now);
+
+  if (manualSelectionWeek.value !== currentWeekMonday) {
+    const firstBizDay = getFirstBusinessDayOfWeek(now, holidayData);
+    baseDate.value = firstBizDay;
+    manualSelectionWeek.value = null;
+  }
+}
+
+function handleFilterChange() {
+  const selectedDate = parseLocalDate(baseDate.value);
+  manualSelectionWeek.value = getMondayOfWeek(selectedDate);
+  loadReservations();
+}
+
 async function refreshDashboard() {
   const latestDateText = toDateInputValue(new Date());
   const dateChanged = latestDateText !== currentDateText.value;
 
   if (dateChanged) {
     currentDateText.value = latestDateText;
-    baseDate.value = latestDateText;
+    try {
+      checkAndApplyWeeklyRollover();
+    } catch (error) {
+      errorMessage.value = error.code === "ERR_HOLIDAY_DATA_UNAVAILABLE" ? "ERR_HOLIDAY_DATA_UNAVAILABLE" : error.message;
+      return;
+    }
   }
 
   await loadReservations({ silent: true });
@@ -613,7 +669,12 @@ function scheduleDateRollover() {
 
 function handleVisibilityChange() {
   if (document.visibilityState === "visible") {
-    refreshDashboard();
+    try {
+      checkAndApplyWeeklyRollover();
+      refreshDashboard();
+    } catch (error) {
+      errorMessage.value = error.code === "ERR_HOLIDAY_DATA_UNAVAILABLE" ? "ERR_HOLIDAY_DATA_UNAVAILABLE" : error.message;
+    }
     requestScreenWakeLock();
   }
 }
@@ -653,52 +714,6 @@ async function releaseScreenWakeLock() {
   if (sentinel && !sentinel.released) {
     await sentinel.release();
   }
-}
-
-function getNextBusinessDays(dateText, count) {
-  const days = [];
-  let currentDate = parseLocalDate(dateText);
-
-  while (days.length < count) {
-    if (isBusinessDay(currentDate)) {
-      days.push({
-        date: toDateInputValue(currentDate),
-        label: getDayLabel(currentDate)
-      });
-    }
-
-    currentDate = addDays(currentDate, 1);
-  }
-
-  return days;
-}
-
-function isBusinessDay(date) {
-  const day = date.getDay();
-  return day !== 0 && day !== 6;
-}
-
-function getDayLabel(date) {
-  const dayNames = ["일", "월", "화", "수", "목", "금", "토"];
-  return `${dayNames[date.getDay()]}요일`;
-}
-
-function addDays(date, days) {
-  const copiedDate = new Date(date);
-  copiedDate.setDate(copiedDate.getDate() + days);
-  return copiedDate;
-}
-
-function parseLocalDate(dateText) {
-  const [year, month, day] = dateText.split("-").map(Number);
-  return new Date(year, month - 1, day);
-}
-
-function toDateInputValue(date) {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
 }
 
 function getRoomName(roomId) {
@@ -1040,6 +1055,17 @@ function showToast(message, type = "success") {
   background: #1d4ed8;
   border-color: #1d4ed8;
   box-shadow: 0 8px 18px rgba(37, 99, 235, 0.28);
+}
+.error .error-code {
+  font-family: monospace;
+  font-size: 20px;
+  color: #dc2626;
+  margin-bottom: 8px;
+  font-weight: 800;
+}
+.error .error-msg {
+  font-size: 16px;
+  color: #7f1d1d;
 }
 </style>
 

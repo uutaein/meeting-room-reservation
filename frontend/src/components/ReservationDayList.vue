@@ -3,7 +3,7 @@
     <article
       v-for="day in dailyReservations"
       :key="day.date"
-      :class="['day-card', { 'is-today': isToday(day.date) }]"
+      :class="['day-card', { 'is-today': isToday(day.date), 'is-past-day': isPastDay(day.date) }]"
     >
       <header class="day-header">
         <div class="day-title-container">
@@ -23,7 +23,7 @@
         <article
           v-for="reservation in day.reservations"
           :key="reservation.id"
-          class="reservation-card"
+          :class="['reservation-card', { 'is-past': isPast(day.date, reservation.endTime) }]"
         >
           <div :class="['room-block', roomClass(reservation.roomId)]">
             <span class="room-indicator" aria-hidden="true"></span>
@@ -38,6 +38,7 @@
 
           <div class="reservation-content">
             <div class="reservation-title" :title="reservation.purpose">
+              <span v-if="isPast(day.date, reservation.endTime)" class="sr-only">(회의 종료됨)</span>
               <span v-if="reservation.recurringGroupId" class="recurring-badge">반복</span>
               {{ reservation.purpose }}
             </div>
@@ -63,8 +64,8 @@
             <button
               type="button"
               class="edit-button"
-              :disabled="loading || submitting || reservation.isPreview || !!reservation.recurringGroupId"
-              :title="reservation.isPreview ? '가상 데이터입니다.' : (reservation.recurringGroupId ? '반복 예약은 수정할 수 없습니다.' : '')"
+              :disabled="loading || submitting || reservation.isPreview || !!reservation.recurringGroupId || isPast(day.date, reservation.endTime)"
+              :title="reservation.isPreview ? '가상 데이터입니다.' : (reservation.recurringGroupId ? '반복 예약은 수정할 수 없습니다.' : (isPast(day.date, reservation.endTime) ? '지난 예약은 수정할 수 없습니다.' : ''))"
               @click="$emit('edit-reservation', day, reservation)"
             >
               수정
@@ -72,8 +73,8 @@
             <button
               type="button"
               class="cancel-button"
-              :disabled="loading || submitting || reservation.isPreview"
-              :title="reservation.isPreview ? '가상 데이터입니다.' : ''"
+              :disabled="loading || submitting || reservation.isPreview || isPast(day.date, reservation.endTime)"
+              :title="reservation.isPreview ? '가상 데이터입니다.' : (isPast(day.date, reservation.endTime) ? '지난 예약은 취소할 수 없습니다.' : '')"
               @click="$emit('cancel-reservation', day, reservation)"
             >
               취소
@@ -92,6 +93,10 @@ const props = defineProps({
     required: true
   },
   currentDate: {
+    type: String,
+    required: true
+  },
+  currentTime: {
     type: String,
     required: true
   },
@@ -125,6 +130,16 @@ function roomClass(roomId) {
 
 function isToday(dateStr) {
   return dateStr === props.currentDate;
+}
+
+function isPastDay(dateStr) {
+  return dateStr < props.currentDate;
+}
+
+function isPast(dateStr, startTimeStr) {
+  if (!props.currentTime) return false;
+  const targetDateTime = `${dateStr} ${startTimeStr}`;
+  return targetDateTime < props.currentTime;
 }
 
 function formatDateFriendly(dateStr) {
@@ -438,26 +453,26 @@ function formatDateFriendly(dateStr) {
   }
 
   .day-header {
-    padding: 16px 18px;
+    padding: 20px 23px;
   }
 
   .day-title-container {
-    gap: 10px;
+    gap: 13px;
   }
 
   .day-date {
-    font-size: 22px;
+    font-size: 28px;
   }
 
   .day-week-label,
   .today-label {
-    padding: 4px 10px;
-    font-size: 14px;
+    padding: 7px 17px;
+    font-size: 20px;
   }
 
   .count {
-    padding: 6px 12px;
-    font-size: 14px;
+    padding: 10px 20px;
+    font-size: 20px;
   }
 
   .reservations-container {
@@ -466,65 +481,67 @@ function formatDateFriendly(dateStr) {
   }
 
   .reservation-card {
-    grid-template-columns: 100px 164px minmax(0, 1fr) 66px;
-    min-height: 76px;
-    border-radius: 14px;
+    grid-template-columns: 134px 220px minmax(0, 1fr) 87px;
+    min-height: 107px;
+    border-radius: 20px;
   }
 
   .room-block {
-    gap: 8px;
-    padding: 10px;
+    gap: 10px;
+    padding: 13px;
   }
 
   .room-indicator {
-    width: 8px;
-    height: 8px;
+    width: 10px;
+    height: 10px;
   }
 
   .room-name {
-    font-size: 18px;
+    font-size: 23px;
   }
 
   .time-block {
-    padding: 10px 14px;
+    padding: 13px 17px;
   }
 
   .time-value {
-    font-size: 20px;
+    font-size: 27px;
   }
 
   .reservation-content {
-    gap: 7px;
-    padding: 10px 18px;
+    gap: 12px;
+    padding: 13px 23px;
   }
 
   .reservation-title {
-    font-size: 19px;
+    font-size: 27px;
   }
 
   .reservation-meta {
-    gap: 22px;
+    gap: 30px;
   }
 
   .meta-item {
-    gap: 6px;
-    font-size: 14px;
+    gap: 8px;
+    font-size: 18px;
   }
 
   .meta-icon {
-    width: 16px;
-    height: 16px;
+    width: 22px;
+    height: 22px;
   }
 
   .reservation-actions {
-    gap: 6px;
-    padding: 8px;
+    gap: 10px;
+    padding: 10px;
   }
 
   .edit-button,
   .cancel-button {
-    min-height: 27px;
-    font-size: 13px;
+    min-height: 38px;
+    font-size: 18px;
+    padding: 4px 8px;
+    border-radius: 12px;
   }
 }
 
@@ -574,5 +591,80 @@ function formatDateFriendly(dateStr) {
   font-weight: 800;
   margin-right: 6px;
   vertical-align: middle;
+}
+.reservation-card.is-past {
+  background: #f8fafc !important;
+  border-color: #cbd5e1 !important;
+  box-shadow: none !important;
+  opacity: 0.55 !important;
+  filter: grayscale(100%) contrast(0.85);
+  pointer-events: auto;
+}
+
+.reservation-card.is-past:hover {
+  transform: none !important;
+  border-color: #cbd5e1 !important;
+  box-shadow: none !important;
+}
+
+.reservation-card.is-past .room-block {
+  background: #cbd5e1 !important;
+  color: #475569 !important;
+}
+
+.reservation-card.is-past .room-indicator {
+  background: #94a3b8 !important;
+  box-shadow: none !important;
+}
+
+.reservation-card.is-past .time-block {
+  background: #f1f5f9 !important;
+}
+
+.reservation-card.is-past .time-value {
+  color: #475569 !important;
+}
+
+.reservation-card.is-past .reservation-title {
+  color: #475569 !important;
+  text-decoration: line-through !important;
+}
+
+.reservation-card.is-past .reservation-actions {
+  background: #f1f5f9 !important;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  border: 0;
+}
+.day-card.is-past-day {
+  background: #f8fafc;
+  border-color: rgba(148, 163, 184, 0.12);
+  opacity: 0.7;
+}
+
+.day-card.is-past-day .day-header {
+  border-bottom-color: rgba(148, 163, 184, 0.12);
+  background: #f1f5f9;
+}
+
+.day-card.is-past-day .day-date {
+  color: #64748b;
+}
+
+.day-card.is-past-day .day-week-label {
+  background: #e2e8f0;
+  color: #64748b;
+}
+
+.day-card.is-past-day .count {
+  background: #94a3b8;
 }
 </style>

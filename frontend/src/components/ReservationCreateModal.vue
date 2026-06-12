@@ -31,7 +31,7 @@
           <div class="form-field">
             <label for="reservation-date">예약일 / 시작일</label>
             <div class="date-adjuster">
-              <button type="button" class="adjust-btn" @click="adjustDate(-1)" :disabled="submitting">
+              <button type="button" class="adjust-btn" @click="adjustDate(-1)" :disabled="submitting || isPrevDateDisabled">
                 하루 전
               </button>
               <input
@@ -40,6 +40,7 @@
                 type="date"
                 required
                 :disabled="submitting"
+                :min="minDate"
               />
               <button type="button" class="adjust-btn" @click="adjustDate(1)" :disabled="submitting">
                 다음날
@@ -317,6 +318,32 @@ const localError = ref("");
 const suggestionMessage = ref("");
 const confirmedWarning = ref(false);
 
+const minDate = computed(() => {
+  const tzOffset = 9 * 60 * 60 * 1000;
+  const localTime = new Date(Date.now() + tzOffset);
+  return localTime.toISOString().substring(0, 10);
+});
+
+const isPrevDateDisabled = computed(() => {
+  if (!form.reservationDate) return true;
+  const [y, m, d] = form.reservationDate.split("-").map(Number);
+  const date = new Date(y, m - 1, d);
+  let direction = -1;
+  let attempts = 0;
+  do {
+    date.setDate(date.getDate() + direction);
+    attempts++;
+    if (attempts > 30) break;
+  } while (date.getDay() === 0 || date.getDay() === 6);
+  
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  const prevDateStr = `${year}-${month}-${day}`;
+  
+  return prevDateStr < minDate.value;
+});
+
 watch([startHour, startMinute], () => {
   form.startTime = `${startHour.value}:${startMinute.value}`;
 });
@@ -422,18 +449,41 @@ function adjustDate(direction) {
   const [y, m, d] = form.reservationDate.split("-").map(Number);
   const date = new Date(y, m - 1, d);
 
+  let attempts = 0;
   do {
     date.setDate(date.getDate() + direction);
+    attempts++;
+    if (attempts > 30) break;
   } while (date.getDay() === 0 || date.getDay() === 6);
 
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, "0");
   const day = String(date.getDate()).padStart(2, "0");
+  const nextDateStr = `${year}-${month}-${day}`;
 
-  form.reservationDate = `${year}-${month}-${day}`;
+  if (nextDateStr < minDate.value) {
+    return;
+  }
+
+  form.reservationDate = nextDateStr;
 }
 
 function handleSubmit() {
+  const tzOffset = 9 * 60 * 60 * 1000;
+  const localTime = new Date(Date.now() + tzOffset);
+  const isoStr = localTime.toISOString();
+  const todayStr = isoStr.substring(0, 10);
+  const currentTimeStr = isoStr.substring(11, 16);
+
+  if (form.reservationDate < todayStr) {
+    localError.value = "이미 지난 날짜나 시간에는 예약할 수 없습니다.";
+    return;
+  }
+  if (form.reservationDate === todayStr && form.startTime <= currentTimeStr) {
+    localError.value = "이미 지난 날짜나 시간에는 예약할 수 없습니다.";
+    return;
+  }
+
   const contactClean = String(form.contact).trim();
   if (!/^[0-9-]+$/.test(contactClean)) {
     localError.value = "연락처는 숫자와 하이픈만 입력할 수 있습니다.";
