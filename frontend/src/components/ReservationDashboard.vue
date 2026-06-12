@@ -80,7 +80,7 @@
 
         <div class="recurring-confirm-content">
           <p class="guide-text">
-            이 예약을 취소하려면 회의목적 <strong class="target-title">{{ cancelTarget?.reservation?.purpose }}</strong>을 입력하세요.
+            이 예약을 취소하려면 회의목적 <strong class="target-title">{{ cancelTarget?.reservation?.purpose }}</strong>{{ getPostposition(cancelTarget?.reservation?.purpose, 'objective') }} 입력하세요.
           </p>
           
           <div class="form-field">
@@ -144,7 +144,7 @@
           </p>
           
           <p class="guide-text">
-            이 반복 예약을 {{ recurringConfirmAction === 'update' ? '수정' : '취소' }}하려면 <strong class="target-title">{{ recurringConfirmTitle }}</strong>을 입력하세요.
+            이 반복 예약을 {{ recurringConfirmAction === 'update' ? '수정' : '취소' }}하려면 <strong class="target-title">{{ recurringConfirmTitle }}</strong>{{ getPostposition(recurringConfirmTitle, 'objective') }} 입력하세요.
           </p>
           
           <div class="form-field">
@@ -511,6 +511,19 @@ const getAffectedRecurringInfo = (allReservations, startDate) => {
     range: matches.length > 0 ? `${matches[0]} ~ ${matches[matches.length - 1]}` : ""
   };
 };
+
+function getPostposition(word, postpositionType) {
+  if (!word) return "";
+  const lastChar = word.charCodeAt(word.length - 1);
+  if (lastChar < 0xac00 || lastChar > 0xd7a3) {
+    return postpositionType === "objective" ? "을" : "이";
+  }
+  const hasBatchim = (lastChar - 0xac00) % 28 > 0;
+  if (postpositionType === "objective") {
+    return hasBatchim ? "을" : "를";
+  }
+  return hasBatchim ? "이" : "가";
+}
 
 async function loadReservations({ silent = false } = {}) {
   if (isRefreshingReservations) {
