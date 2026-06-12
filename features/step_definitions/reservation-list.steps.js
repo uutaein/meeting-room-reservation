@@ -31,7 +31,8 @@ Given("다음 예약들이 등록되어 있다", async function (dataTable) {
         endTime: row.endTime,
         ownerName: row.ownerName,
         attendees: Number(row.attendees),
-        purpose: row.purpose
+        purpose: row.purpose,
+        contact: row.contact || "010-1234-5678"
       })
     });
 
