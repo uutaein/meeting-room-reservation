@@ -144,7 +144,7 @@
           </p>
           
           <p class="guide-text">
-            이 반복 예약을 {{ recurringConfirmAction === 'update' ? '수정' : '취소' }}하려면 <strong class="target-title">{{ recurringConfirmTitle }}</strong>{{ getPostposition(recurringConfirmTitle, 'objective') }} 입력하세요.
+            이 예약을 취소하려면 회의목적 <strong class="target-title">{{ recurringConfirmPurpose }}</strong>{{ getPostposition(recurringConfirmPurpose, 'objective') }} 입력하세요.
           </p>
           
           <div class="form-field">
@@ -152,7 +152,7 @@
               id="recurring-title-confirm"
               v-model="recurringConfirmInput"
               type="text"
-              placeholder="반복 예약 제목 입력"
+              placeholder="회의목적 입력"
               :disabled="submitting"
               class="confirm-input"
             />
@@ -177,7 +177,7 @@
             id="recurring-confirm-submit"
             :class="['danger-button', { 'update-confirm-button': recurringConfirmAction === 'update' }]"
             type="button"
-            :disabled="submitting || recurringConfirmInput !== recurringConfirmTitle"
+            :disabled="submitting || recurringConfirmInput !== recurringConfirmPurpose"
             @click="submitRecurringConfirm"
           >
             {{ submitting ? "처리 중..." : (recurringConfirmAction === 'update' ? "수정 진행" : "취소 진행") }}
@@ -245,6 +245,7 @@ let wakeLockSentinel = null;
 const isRecurringConfirmOpen = ref(false);
 const recurringConfirmAction = ref("update");
 const recurringConfirmTitle = ref("");
+const recurringConfirmPurpose = ref("");
 const recurringConfirmInput = ref("");
 const affectedCount = ref(0);
 const affectedRange = ref("");
@@ -349,6 +350,7 @@ async function openCancelConfirm(day, reservation) {
       
       recurringConfirmAction.value = "cancel";
       recurringConfirmTitle.value = reservation.recurringTitle || "";
+      recurringConfirmPurpose.value = reservation.purpose || "";
       recurringConfirmInput.value = "";
       affectedCount.value = info.count;
       affectedRange.value = info.range;
@@ -483,6 +485,7 @@ async function submitRecurringConfirm() {
     isRecurringConfirmOpen.value = false;
     selectedReservation.value = null;
     recurringConfirmPayload.value = null;
+    recurringConfirmPurpose.value = "";
     await loadReservations();
   } catch (error) {
     recurringConfirmError.value = error.message;
@@ -496,6 +499,7 @@ function closeRecurringConfirm() {
   isRecurringConfirmOpen.value = false;
   selectedReservation.value = null;
   recurringConfirmPayload.value = null;
+  recurringConfirmPurpose.value = "";
 }
 
 const getAffectedRecurringInfo = (allReservations, startDate) => {
