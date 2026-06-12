@@ -38,7 +38,9 @@
 
           <div class="reservation-content">
             <div class="reservation-title" :title="reservation.purpose">
-              <span v-if="reservation.recurringGroupId" class="recurring-badge">반복</span>
+              <span v-if="reservation.recurringGroupId" class="recurring-badge">
+                [반복: {{ reservation.recurringTitle }}]
+              </span>
               {{ reservation.purpose }}
             </div>
 
