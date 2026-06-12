@@ -8,7 +8,6 @@ Feature: 주간 반복 예약
     Given 회의실 1에 2026-06-15부터 2026-07-31까지 매주 월요일 09:00부터 10:00까지 기존 예약이 없다
     When 사용자가 아래 정보로 주간 반복 예약을 생성한다
       | 회의실       | 회의실 1 |
-      | 반복예약제목 | 주간회의 |
       | 시작일       | 2026-06-15 |
       | 반복요일     | 월요일 |
       | 시작시간     | 09:00 |
@@ -63,12 +62,11 @@ Feature: 주간 반복 예약
     And 생성된 반복 예약 회차는 6건이어야 한다
     And 2026-06-29 예약은 생성되지 않아야 한다
 
-  @REQ-REC-400-title-required
-  Scenario: 반복 예약 제목이 없으면 반복 예약을 생성하지 않는다
+  @REQ-REC-400-purpose-required
+  Scenario: 회의 목적이 없으면 반복 예약을 생성하지 않는다
     Given 사용자가 주간 반복 예약 생성을 선택했다
-    When 사용자가 반복 예약 제목 없이 주간 반복 예약을 생성한다
+    When 사용자가 회의 목적 없이 주간 반복 예약을 생성한다
     Then 주간 반복 예약 생성은 실패해야 한다
-    And 오류 코드는 "ERR_REC_TITLE_REQUIRED" 이어야 한다
 
   @REQ-REC-400-end-month-required
   Scenario: 반복 종료월이 없으면 반복 예약을 생성하지 않는다
@@ -98,16 +96,16 @@ Feature: 주간 반복 예약
     Then 주간 반복 예약 생성은 실패해야 한다
     And 오류 코드는 "ERR_RESERVATION_OVERLAP" 이어야 한다
 
-  @REQ-REC-400-update-title-confirm-mismatch
-  Scenario: 반복 예약 수정 시 제목 확인이 일치하지 않으면 수정하지 않는다
-    Given 반복 예약 제목이 "주간회의"인 주간 반복 예약이 존재한다
-    When 사용자가 반복 예약 수정을 위해 제목 확인값 "주간회"를 입력한다
+  @REQ-REC-400-update-purpose-confirm-mismatch
+  Scenario: 반복 예약 수정 시 목적 확인이 일치하지 않으면 수정하지 않는다
+    Given 회의 목적이 "주간 정례회의"인 주간 반복 예약이 존재한다
+    When 사용자가 반복 예약 수정을 위해 목적 확인값 "주간회"를 입력한다
     Then 반복 예약 수정은 실패해야 한다
-    And 오류 코드는 "ERR_REC_TITLE_CONFIRM_MISMATCH" 이어야 한다
+    And 오류 코드는 "ERR_REC_PURPOSE_CONFIRM_MISMATCH" 이어야 한다
 
-  @REQ-REC-400-cancel-title-confirm-mismatch
-  Scenario: 반복 예약 취소 시 제목 확인이 일치하지 않으면 취소하지 않는다
-    Given 반복 예약 제목이 "주간회의"인 주간 반복 예약이 존재한다
-    When 사용자가 반복 예약 취소를 위해 제목 확인값 "주간회"를 입력한다
+  @REQ-REC-400-cancel-purpose-confirm-mismatch
+  Scenario: 반복 예약 취소 시 목적 확인이 일치하지 않으면 취소하지 않는다
+    Given 회의 목적이 "주간 정례회의"인 주간 반복 예약이 존재한다
+    When 사용자가 반복 예약 취소를 위해 목적 확인값 "주간회"를 입력한다
     Then 반복 예약 취소는 실패해야 한다
-    And 오류 코드는 "ERR_REC_TITLE_CONFIRM_MISMATCH" 이어야 한다
+    And 오류 코드는 "ERR_REC_PURPOSE_CONFIRM_MISMATCH" 이어야 한다

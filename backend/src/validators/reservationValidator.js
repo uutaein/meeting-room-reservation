@@ -266,17 +266,12 @@ function validateContact(contact) {
 }
 
 export function validateCreateRecurringReservation(input, isSubmit = true) {
-  // 1. 반복 제목 필수 검증
-  if (!input.recurringTitle || String(input.recurringTitle).trim() === "") {
-    throwProblem(400, "ERR_REC_TITLE_REQUIRED", "반복 예약 제목을 입력하세요.");
-  }
-
-  // 2. 종료월 필수 검증
+  // 1. 종료월 필수 검증
   if (!input.endMonth || String(input.endMonth).trim() === "") {
     throwProblem(400, "ERR_REC_END_MONTH_REQUIRED", "반복 종료월을 입력하세요.");
   }
 
-  // 3. 종료월 형식 검증 (YYYY-MM)
+  // 2. 종료월 형식 검증 (YYYY-MM)
   if (!/^\d{4}-\d{2}$/.test(input.endMonth)) {
     throwProblem(400, "ERR_REC_END_MONTH_FORMAT", "반복 종료월은 YYYY-MM 형식이어야 합니다.");
   }
@@ -286,7 +281,7 @@ export function validateCreateRecurringReservation(input, isSubmit = true) {
     throwProblem(400, "ERR_REC_END_MONTH_FORMAT", "반복 종료월은 YYYY-MM 형식의 유효한 월이어야 합니다.");
   }
 
-  // 4. 시작일 형식 및 필수 검증
+  // 3. 시작일 형식 및 필수 검증
   if (!input.reservationDate || !/^\d{4}-\d{2}-\d{2}$/.test(input.reservationDate)) {
     throwProblem(400, "ERR_REQUIRED_FIELD", "시작일이 올바르지 않습니다.");
   }
@@ -295,7 +290,7 @@ export function validateCreateRecurringReservation(input, isSubmit = true) {
     throwProblem(400, "ERR_DATE_FORMAT", "시작일은 YYYY-MM-DD 형식의 유효한 날짜이어야 합니다.");
   }
 
-  // 5. 종료월이 시작일의 월보다 빠른지 검증
+  // 4. 종료월이 시작일의 월보다 빠른지 검증
   const startYearMonth = input.reservationDate.substring(0, 7); // YYYY-MM
   if (input.endMonth < startYearMonth) {
     throwProblem(400, "ERR_REC_END_MONTH_BEFORE_START", "반복 종료월은 시작월보다 빠를 수 없습니다.");

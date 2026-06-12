@@ -19,6 +19,7 @@ import {
 } from "../repositories/reservationRepository.js";
 
 import { getDb } from "../db/connection.js";
+import { assertHolidayDataAvailableForDates, isHoliday } from "../utils/holidayData.js";
 
 export function createReservation(input) {
   validateCreateReservation(input);
@@ -134,10 +135,17 @@ export function previewRecurring(input) {
   validateRoomExists(input.roomId);
 
   const dates = getRecurringDates(input.reservationDate, input.endMonth);
+  assertHolidayDataAvailableForDates(dates);
   const conflicts = [];
   const occurrences = [];
+  const excludedHolidayDates = [];
 
   for (const date of dates) {
+    if (isHoliday(date)) {
+      excludedHolidayDates.push(date);
+      continue;
+    }
+
     const singleInput = {
       roomId: input.roomId,
       reservationDate: date,
@@ -153,9 +161,11 @@ export function previewRecurring(input) {
 
   return {
     totalCount: dates.length,
-    occurrences: dates,
+    occurrences,
     conflicts: conflicts,
-    availableCount: occurrences.length
+    excludedHolidayDates,
+    availableCount: occurrences.length,
+    holidayExcludedCount: excludedHolidayDates.length
   };
 }
 
@@ -164,10 +174,17 @@ export function createRecurringReservation(input) {
   validateRoomExists(input.roomId);
 
   const dates = getRecurringDates(input.reservationDate, input.endMonth);
+  assertHolidayDataAvailableForDates(dates);
   const conflicts = [];
   const occurrences = [];
+  const excludedHolidayDates = [];
 
   for (const date of dates) {
+    if (isHoliday(date)) {
+      excludedHolidayDates.push(date);
+      continue;
+    }
+
     const singleInput = {
       roomId: input.roomId,
       reservationDate: date,
@@ -190,11 +207,7 @@ export function createRecurringReservation(input) {
   }
 
   if (occurrences.length === 0) {
-    throwProblem(
-      409,
-      "ERR_RESERVATION_OVERLAP",
-      "같은 회의실에 겹치는 예약이 이미 존재합니다."
-    );
+    return [];
   }
 
   const db = getDb();
@@ -219,7 +232,7 @@ export function createRecurringReservation(input) {
         purpose: input.purpose,
         contact: input.contact,
         recurringGroupId: groupId,
-        recurringTitle: input.recurringTitle,
+        recurringTitle: null,
         repeatType: "WEEKLY",
         repeatWeekday: repeatWeekday,
         repeatStartDate: input.reservationDate,
@@ -242,8 +255,8 @@ export function updateRecurring(groupId, input) {
   }
 
   const firstReservation = existing[0];
-  if (firstReservation.recurringTitle !== input.titleConfirm) {
-    throwProblem(400, "ERR_REC_TITLE_CONFIRM_MISMATCH", "입력한 제목이 반복 예약 제목과 일치하지 않습니다.");
+  if (firstReservation.purpose !== input.purposeConfirm) {
+    throwProblem(400, "ERR_REC_PURPOSE_CONFIRM_MISMATCH", "입력한 회의 목적이 반복 예약 회의 목적과 일치하지 않습니다.");
   }
 
   const tempInput = {
@@ -292,8 +305,8 @@ export function cancelRecurring(groupId, input) {
   }
 
   const firstReservation = existing[0];
-  if (firstReservation.recurringTitle !== input.titleConfirm) {
-    throwProblem(400, "ERR_REC_TITLE_CONFIRM_MISMATCH", "입력한 제목이 반복 예약 제목과 일치하지 않습니다.");
+  if (firstReservation.purpose !== input.purposeConfirm) {
+    throwProblem(400, "ERR_REC_PURPOSE_CONFIRM_MISMATCH", "입력한 회의 목적이 반복 예약 회의 목적과 일치하지 않습니다.");
   }
 
   const db = getDb();

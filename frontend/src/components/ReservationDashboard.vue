@@ -149,15 +149,15 @@
           </p>
           
           <p class="guide-text">
-            이 예약을 {{ recurringConfirmAction === 'update' ? '수정' : '취소' }}하려면 반복 예약 제목 <strong class="target-title">{{ recurringConfirmTitle }}</strong>{{ getPostposition(recurringConfirmTitle, 'objective') }} 입력하세요.
+            이 예약을 {{ recurringConfirmAction === 'update' ? '수정' : '취소' }}하려면 회의목적 <strong class="target-title">{{ recurringConfirmPurpose }}</strong>{{ getPostposition(recurringConfirmPurpose, 'objective') }} 입력하세요.
           </p>
           
           <div class="form-field">
             <input
-              id="recurring-title-confirm"
+              id="recurring-purpose-confirm"
               v-model="recurringConfirmInput"
               type="text"
-              placeholder="반복 예약 제목 입력"
+              placeholder="회의목적 입력"
               :disabled="submitting"
               class="confirm-input"
             />
@@ -182,7 +182,7 @@
             id="recurring-confirm-submit"
             :class="['danger-button', { 'update-confirm-button': recurringConfirmAction === 'update' }]"
             type="button"
-            :disabled="submitting || recurringConfirmInput !== recurringConfirmTitle"
+            :disabled="submitting || recurringConfirmInput !== recurringConfirmPurpose"
             @click="submitRecurringConfirm"
           >
             {{ submitting ? "처리 중..." : (recurringConfirmAction === 'update' ? "수정 진행" : "취소 진행") }}
@@ -263,7 +263,6 @@ let wakeLockSentinel = null;
 // recurring reservation confirm modal states
 const isRecurringConfirmOpen = ref(false);
 const recurringConfirmAction = ref("update");
-const recurringConfirmTitle = ref("");
 const recurringConfirmPurpose = ref("");
 const recurringConfirmInput = ref("");
 const affectedCount = ref(0);
@@ -387,7 +386,6 @@ async function openCancelConfirm(day, reservation) {
       const info = getAffectedRecurringInfo(allReservations, minStartDate);
       
       recurringConfirmAction.value = "cancel";
-      recurringConfirmTitle.value = reservation.recurringTitle || "";
       recurringConfirmPurpose.value = reservation.purpose || "";
       recurringConfirmInput.value = "";
       affectedCount.value = info.count;
@@ -459,7 +457,7 @@ async function handleUpdateSubmit(id, formData) {
       );
       
       recurringConfirmAction.value = "update";
-      recurringConfirmTitle.value = selectedReservation.value.recurringTitle || "";
+      recurringConfirmPurpose.value = selectedReservation.value.purpose || "";
       recurringConfirmInput.value = "";
       affectedCount.value = info.count;
       affectedRange.value = info.range;
@@ -520,14 +518,14 @@ async function submitRecurringConfirm() {
   try {
     if (recurringConfirmAction.value === "update") {
       await updateRecurringReservation(recurringConfirmGroupId.value, {
-        titleConfirm: recurringConfirmInput.value,
+        purposeConfirm: recurringConfirmInput.value,
         startDate: recurringConfirmStartDate.value,
         ...recurringConfirmPayload.value
       });
       showToast("반복 예약이 수정되었습니다.");
     } else {
       await cancelRecurringReservation(recurringConfirmGroupId.value, {
-        titleConfirm: recurringConfirmInput.value,
+        purposeConfirm: recurringConfirmInput.value,
         startDate: recurringConfirmStartDate.value
       });
       showToast("반복 예약이 취소되었습니다.");

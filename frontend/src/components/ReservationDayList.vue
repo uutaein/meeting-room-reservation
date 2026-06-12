@@ -40,7 +40,6 @@
             <div class="reservation-title" :title="reservation.purpose">
               <span v-if="isPast(day.date, reservation.startTime)" class="sr-only">(시작 시간 지남)</span>
               <span v-if="reservation.recurringGroupId" class="recurring-badge">반복</span>
-              <span v-if="reservation.recurringGroupId" class="recurring-title-text">[{{ reservation.recurringTitle }}]</span>
               {{ reservation.purpose }}
             </div>
 
@@ -590,12 +589,6 @@ function formatDateFriendly(dateStr) {
   border-radius: 4px;
   font-size: 11px;
   font-weight: 800;
-  margin-right: 6px;
-  vertical-align: middle;
-}
-.recurring-title-text {
-  font-weight: 600;
-  color: #1e293b;
   margin-right: 6px;
   vertical-align: middle;
 }

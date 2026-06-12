@@ -142,17 +142,6 @@
         <div v-if="isRecurring" class="recurring-fields-container">
           <div class="form-row">
             <div class="form-field">
-              <label for="recurring-title">반복 예약 제목</label>
-              <input
-                id="recurring-title"
-                v-model.trim="form.recurringTitle"
-                type="text"
-                required
-                :disabled="submitting"
-                placeholder="예: 주간회의"
-              />
-            </div>
-            <div class="form-field">
               <label>반복 요일</label>
               <input
                 type="text"
@@ -176,7 +165,24 @@
           <!-- 충돌 및 가능한 날짜 미리보기 결과 영역 -->
           <div v-if="recurringPreview" class="preview-box">
             <h3>예약 미리보기 결과</h3>
-            <p>예상 생성 건수: <strong>{{ recurringPreview.totalCount }}건</strong></p>
+            <div class="preview-summary">
+              <p>전체 계산 대상 회차: <strong>{{ recurringPreview.totalCount }}건</strong></p>
+              <p>공휴일 제외 회차: <strong>{{ recurringPreview.holidayExcludedCount || 0 }}건</strong></p>
+              <p>생성 가능 회차: <strong>{{ recurringPreview.availableCount }}건</strong></p>
+            </div>
+
+            <div v-if="recurringPreview.excludedHolidayDates?.length > 0" class="holiday-alert">
+              <p class="holiday-title">공휴일 제외 날짜</p>
+              <div class="date-tags">
+                <span
+                  v-for="d in recurringPreview.excludedHolidayDates"
+                  :key="d"
+                  class="date-tag holiday-tag"
+                >
+                  {{ d }}
+                </span>
+              </div>
+            </div>
             
             <div v-if="recurringPreview.conflicts.length > 0" class="conflict-alert">
               <p class="warning-text">⚠️ 일부 날짜에 기존 예약과 시간이 겹칩니다.</p>
@@ -198,7 +204,7 @@
             </div>
             
             <div v-else class="success-text">
-              ✨ 모든 회차가 예약 가능합니다!
+              ✨ 공휴일과 충돌을 제외하면 모든 회차가 예약 가능합니다!
             </div>
             
             <div class="occurrences-list">
@@ -207,7 +213,7 @@
                 <span
                   v-for="d in recurringPreview.occurrences"
                   :key="d"
-                  :class="['date-tag', { 'conflict-tag': recurringPreview.conflicts.includes(d) }]"
+                  class="date-tag available-tag"
                 >
                   {{ d }}
                 </span>
@@ -290,7 +296,6 @@ const form = reactive({
   attendees: 1,
   purpose: "",
   contact: "",
-  recurringTitle: "",
   endMonth: "",
   createAvailableOnly: false
 });
@@ -362,13 +367,10 @@ watch(
 
 watch(isRecurring, (newVal) => {
   if (!newVal) {
-    form.recurringTitle = "";
     form.endMonth = "";
     form.createAvailableOnly = false;
     recurringPreview.value = null;
     previewError.value = "";
-  } else {
-    form.recurringTitle = "주간회의";
   }
 });
 
@@ -379,8 +381,7 @@ watch(
     form.reservationDate,
     form.startTime,
     form.endTime,
-    form.endMonth,
-    form.recurringTitle
+    form.endMonth
   ],
   async () => {
     if (!isRecurring.value || !form.reservationDate || !form.endMonth) {
@@ -398,7 +399,6 @@ watch(
     try {
       const result = await previewRecurringReservation({
         roomId: form.roomId,
-        recurringTitle: form.recurringTitle || "주간회의",
         reservationDate: form.reservationDate,
         startTime: form.startTime,
         endTime: form.endTime,
@@ -431,7 +431,6 @@ watch(
     form.attendees = 1;
     form.purpose = "";
     form.contact = "";
-    form.recurringTitle = "";
     form.endMonth = "";
     form.createAvailableOnly = false;
     localError.value = "";
@@ -692,6 +691,32 @@ function handleSubmit() {
   color: var(--text-h);
 }
 
+.preview-summary {
+  display: grid;
+  gap: 4px;
+  margin-bottom: 12px;
+}
+
+.preview-summary p {
+  margin: 0;
+  font-size: 14px;
+  color: var(--text);
+}
+
+.holiday-alert {
+  padding: 12px;
+  background: hsla(45, 90%, 55%, 0.08);
+  border: 1px solid hsla(45, 90%, 45%, 0.2);
+  border-radius: 8px;
+  margin: 12px 0;
+}
+
+.holiday-title {
+  margin: 0 0 8px 0;
+  color: #a16207;
+  font-weight: 700;
+}
+
 .conflict-alert {
   padding: 12px;
   background: hsla(0, 80%, 60%, 0.08);
@@ -746,6 +771,16 @@ function handleSubmit() {
   color: var(--text-h);
   font-size: 13px;
   font-weight: 600;
+}
+
+.available-tag {
+  background: hsla(215, 90%, 55%, 0.12);
+  color: hsl(215, 90%, 38%);
+}
+
+.holiday-tag {
+  background: hsla(45, 90%, 55%, 0.16);
+  color: #a16207;
 }
 
 .conflict-tag {
