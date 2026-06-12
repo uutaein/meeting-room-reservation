@@ -330,3 +330,7 @@ export function getRecurringDates(startDateStr, endMonthStr) {
   return dates;
 }
 
+export function getRecurringReservations(groupId) {
+  return findReservationsByGroupId(groupId);
+}
+

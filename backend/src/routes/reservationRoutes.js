@@ -7,10 +7,24 @@ import {
   previewRecurring,
   createRecurringReservation,
   updateRecurring,
-  cancelRecurring
+  cancelRecurring,
+  getRecurringReservations
 } from "../services/reservationService.js";
 
 const router = Router();
+
+router.get("/recurring/:groupId", (req, res) => {
+  try {
+    const reservations = getRecurringReservations(req.params.groupId);
+    res.status(200).json({ reservations });
+  } catch (error) {
+    const status = error.status ?? 500;
+    res.status(status).json({
+      code: error.code ?? "ERR_INTERNAL_SERVER",
+      message: error.message ?? "서버 내부 오류가 발생했습니다."
+    });
+  }
+});
 
 router.post("/recurring/preview", (req, res) => {
   try {

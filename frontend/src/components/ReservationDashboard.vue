@@ -204,7 +204,8 @@ import {
   updateReservation,
   createRecurringReservation,
   updateRecurringReservation,
-  cancelRecurringReservation
+  cancelRecurringReservation,
+  fetchRecurringReservations
 } from "../api/reservationApi.js";
 import ReservationFilter from "./ReservationFilter.vue";
 import ReservationDayList from "./ReservationDayList.vue";
@@ -335,24 +336,32 @@ function closeUpdateModal() {
   isUpdateModalOpen.value = false;
 }
 
-function openCancelConfirm(day, reservation) {
+async function openCancelConfirm(day, reservation) {
   if (submitting.value) return;
   errorMessage.value = "";
   cancelPurposeInput.value = "";
 
   if (reservation.recurringGroupId) {
-    const info = getAffectedRecurringInfo(reservation.recurringGroupId, day.date);
-    
-    recurringConfirmAction.value = "cancel";
-    recurringConfirmTitle.value = reservation.recurringTitle || "";
-    recurringConfirmInput.value = "";
-    affectedCount.value = info.count;
-    affectedRange.value = info.range;
-    recurringConfirmGroupId.value = reservation.recurringGroupId;
-    recurringConfirmStartDate.value = day.date;
-    recurringConfirmPayload.value = null;
-    recurringConfirmError.value = "";
-    isRecurringConfirmOpen.value = true;
+    submitting.value = true;
+    try {
+      const allReservations = await fetchRecurringReservations(reservation.recurringGroupId);
+      const info = getAffectedRecurringInfo(allReservations, day.date);
+      
+      recurringConfirmAction.value = "cancel";
+      recurringConfirmTitle.value = reservation.recurringTitle || "";
+      recurringConfirmInput.value = "";
+      affectedCount.value = info.count;
+      affectedRange.value = info.range;
+      recurringConfirmGroupId.value = reservation.recurringGroupId;
+      recurringConfirmStartDate.value = day.date;
+      recurringConfirmPayload.value = null;
+      recurringConfirmError.value = "";
+      isRecurringConfirmOpen.value = true;
+    } catch (error) {
+      showToast("반복 예약을 조회하는 데 실패했습니다.", "error");
+    } finally {
+      submitting.value = false;
+    }
   } else {
     cancelTarget.value = { day, reservation };
     isCancelConfirmOpen.value = true;
@@ -371,6 +380,8 @@ async function handleCreateSubmit(formData) {
   formErrorMessage.value = "";
 
   try {
+    const targetDate = formData.reservationDate || toDateInputValue(new Date());
+
     if (formData.isRecurring) {
       await createRecurringReservation(formData);
       showToast("반복 예약이 등록되었습니다.");
@@ -378,8 +389,9 @@ async function handleCreateSubmit(formData) {
       await createReservation(formData);
       showToast("예약이 등록되었습니다.");
     }
-    currentDateText.value = toDateInputValue(new Date());
-    baseDate.value = currentDateText.value;
+    
+    // 성공 시 대시보드 기준일(baseDate)을 예약 생성일/시작일로 이동
+    baseDate.value = targetDate;
     isCreateModalOpen.value = false;
     await loadReservations();
   } catch (error) {
@@ -486,13 +498,11 @@ function closeRecurringConfirm() {
   recurringConfirmPayload.value = null;
 }
 
-const getAffectedRecurringInfo = (groupId, startDate) => {
+const getAffectedRecurringInfo = (allReservations, startDate) => {
   const matches = [];
-  for (const day of dailyReservations.value) {
-    for (const res of day.reservations) {
-      if (res.recurringGroupId === groupId && day.date >= startDate && res.status === "ACTIVE") {
-        matches.push(day.date);
-      }
+  for (const res of allReservations) {
+    if (res.reservationDate >= startDate && res.status === "ACTIVE") {
+      matches.push(res.reservationDate);
     }
   }
   matches.sort();
