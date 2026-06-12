@@ -78,6 +78,23 @@
           {{ cancelConfirmMessage }}
         </p>
 
+        <div class="recurring-confirm-content">
+          <p class="guide-text">
+            이 예약을 취소하려면 회의목적 <strong class="target-title">{{ cancelTarget?.reservation?.purpose }}</strong>을 입력하세요.
+          </p>
+          
+          <div class="form-field">
+            <input
+              id="cancel-purpose-confirm"
+              v-model="cancelPurposeInput"
+              type="text"
+              placeholder="회의목적 입력"
+              :disabled="submitting"
+              class="confirm-input"
+            />
+          </div>
+        </div>
+
         <div class="cancel-confirm-actions">
           <button
             class="secondary-button"
@@ -89,9 +106,10 @@
           </button>
 
           <button
+            id="cancel-confirm-submit"
             class="danger-button"
             type="button"
-            :disabled="submitting"
+            :disabled="submitting || cancelPurposeInput !== (cancelTarget?.reservation?.purpose || '')"
             @click="confirmCancelReservation"
           >
             {{ submitting ? "취소 중..." : "예, 취소할게요" }}
@@ -211,6 +229,7 @@ const isUpdateModalOpen = ref(false);
 const selectedReservation = ref(null);
 const isCancelConfirmOpen = ref(false);
 const cancelTarget = ref(null);
+const cancelPurposeInput = ref("");
 const toastMessage = ref("");
 const toastType = ref("success");
 const wakeLockActive = ref(false);
@@ -318,6 +337,7 @@ function closeUpdateModal() {
 function openCancelConfirm(day, reservation) {
   if (submitting.value) return;
   errorMessage.value = "";
+  cancelPurposeInput.value = "";
 
   if (reservation.recurringGroupId) {
     const info = getAffectedRecurringInfo(reservation.recurringGroupId, day.date);
@@ -342,6 +362,7 @@ function closeCancelConfirm() {
   if (submitting.value) return;
   isCancelConfirmOpen.value = false;
   cancelTarget.value = null;
+  cancelPurposeInput.value = "";
 }
 
 async function handleCreateSubmit(formData) {
