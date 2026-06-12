@@ -96,12 +96,12 @@ Feature: 주간 반복 예약
     Then 주간 반복 예약 생성은 실패해야 한다
     And 오류 코드는 "ERR_RESERVATION_OVERLAP" 이어야 한다
 
-  @REQ-REC-400-update-purpose-confirm-mismatch
-  Scenario: 반복 예약 수정 시 목적 확인이 일치하지 않으면 수정하지 않는다
+  @REQ-REC-409-update-not-allowed
+  Scenario: 반복 예약 수정은 허용되지 않는다
     Given 회의 목적이 "주간 정례회의"인 주간 반복 예약이 존재한다
     When 사용자가 반복 예약 수정을 위해 목적 확인값 "주간회"를 입력한다
     Then 반복 예약 수정은 실패해야 한다
-    And 오류 코드는 "ERR_REC_PURPOSE_CONFIRM_MISMATCH" 이어야 한다
+    And 오류 코드는 "ERR_REC_UPDATE_NOT_ALLOWED" 이어야 한다
 
   @REQ-REC-400-cancel-purpose-confirm-mismatch
   Scenario: 반복 예약 취소 시 목적 확인이 일치하지 않으면 취소하지 않는다

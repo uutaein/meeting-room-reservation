@@ -254,6 +254,12 @@ export function updateRecurring(groupId, input) {
     throwProblem(404, "ERR_RESERVATION_NOT_FOUND", "예약을 찾을 수 없습니다.");
   }
 
+  throwProblem(
+    409,
+    "ERR_REC_UPDATE_NOT_ALLOWED",
+    "반복 예약은 수정할 수 없습니다. 일괄 취소만 가능합니다."
+  );
+
   const firstReservation = existing[0];
   if (firstReservation.purpose !== input.purposeConfirm) {
     throwProblem(400, "ERR_REC_PURPOSE_CONFIRM_MISMATCH", "입력한 회의 목적이 반복 예약 회의 목적과 일치하지 않습니다.");

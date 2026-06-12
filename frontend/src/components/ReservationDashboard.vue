@@ -353,6 +353,10 @@ function closeCreateModal() {
 }
 
 function openUpdateModal(day, reservation) {
+  if (reservation.recurringGroupId) {
+    showToast("반복 예약은 수정할 수 없습니다. 일괄 취소만 가능합니다.", "error");
+    return;
+  }
   updateErrorMessage.value = "";
   selectedReservation.value = { ...reservation, reservationDate: day.date };
   isUpdateModalOpen.value = true;
