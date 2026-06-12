@@ -18,6 +18,8 @@
 
 주간 반복 예약은 사용자가 같은 회의실, 같은 요일, 같은 시간의 회의를 반복 등록할 수 있게 하는 기능이다.
 
+반복 종료 조건은 `반복 횟수`가 아니라 `반복 종료월`을 기준으로 한다.
+
 ---
 
 ## 2. 범위
@@ -28,12 +30,13 @@
 2. 반복 요일 1개 선택
 3. 동일 회의실 반복
 4. 동일 시작 시간과 종료 시간 반복
-5. 반복 종료일 또는 반복 횟수 입력
+5. 반복 종료월 입력
 6. 반복 예약 생성 전 예상 생성 건수 표시
-7. 반복 예약 생성 전 충돌 날짜 표시
-8. 반복 예약 수정 시 제목 확인
-9. 반복 예약 취소 시 제목 확인
-10. 기존 단건 예약 정책 적용
+7. 반복 예약 생성 전 생성 예정 날짜 표시
+8. 반복 예약 생성 전 충돌 날짜 표시
+9. 반복 예약 수정 시 제목 확인
+10. 반복 예약 취소 시 제목 확인
+11. 기존 단건 예약 정책 적용
 
 ### 2.2 제외 범위
 
@@ -41,12 +44,13 @@
 2. 격주 반복
 3. 매월 반복
 4. 여러 요일 반복
-5. 공휴일 자동 제외
-6. 반복 예외일 관리
-7. 참석자 일정 연동
-8. 반복 예약 알림
-9. 반복 예약 통계 리포트
-10. 권한 기반 반복 예약 관리
+5. 반복 횟수 입력
+6. 공휴일 자동 제외
+7. 반복 예외일 관리
+8. 참석자 일정 연동
+9. 반복 예약 알림
+10. 반복 예약 통계 리포트
+11. 권한 기반 반복 예약 관리
 
 ---
 
@@ -59,8 +63,8 @@
 | 반복 예약 제목 | 반복 예약 수정 또는 취소 확인에 사용하는 제목 |
 | 반복 회차 | 반복 예약 그룹에 속한 개별 날짜의 예약 |
 | 반복 시작일 | 반복 예약이 시작되는 날짜 |
-| 반복 종료일 | 반복 예약이 끝나는 날짜 |
-| 반복 횟수 | 생성할 반복 회차 수 |
+| 반복 종료월 | 반복 예약을 생성할 마지막 월. `YYYY-MM` 형식 |
+| 종료월 마지막 날 | 반복 종료월의 마지막 날짜 |
 | 충돌 날짜 | 반복 생성 대상 중 기존 ACTIVE 예약과 시간이 겹치는 날짜 |
 
 ---
@@ -73,11 +77,13 @@
 | BR-REC-002 | 반복 요일 | 1개 요일 |
 | BR-REC-003 | 반복 회의실 | 동일 회의실 |
 | BR-REC-004 | 반복 시간 | 동일 시작 시간, 동일 종료 시간 |
-| BR-REC-005 | 반복 종료 조건 | 종료일 또는 반복 횟수 중 하나 |
-| BR-REC-006 | 반복 제목 | 필수 |
-| BR-REC-007 | 수정 확인 | 반복 예약 제목 정확히 입력 필요 |
-| BR-REC-008 | 취소 확인 | 반복 예약 제목 정확히 입력 필요 |
-| BR-REC-009 | 단건 정책 적용 | 1분 단위, 최대 2시간, 운영시간, 시간 겹침 정책 적용 |
+| BR-REC-005 | 반복 종료 조건 | 반복 종료월 |
+| BR-REC-006 | 반복 종료월 형식 | `YYYY-MM` |
+| BR-REC-007 | 반복 생성 범위 | 반복 시작일부터 반복 종료월 마지막 날까지 |
+| BR-REC-008 | 반복 제목 | 필수 |
+| BR-REC-009 | 수정 확인 | 반복 예약 제목 정확히 입력 필요 |
+| BR-REC-010 | 취소 확인 | 반복 예약 제목 정확히 입력 필요 |
+| BR-REC-011 | 단건 정책 적용 | 1분 단위, 최대 2시간, 운영시간, 시간 겹침 정책 적용 |
 
 ---
 
@@ -85,11 +91,13 @@
 
 ### 5.1 주간 반복 예약 생성
 
-- **REQ-REC-201-create-weekly** — 사용자가 주간 반복 예약을 선택하고 유효한 반복 조건을 입력하면 반복 기간에 해당하는 예약 회차를 생성한다.
+- **REQ-REC-201-create-weekly** — 사용자가 주간 반복 예약을 선택하고 유효한 반복 조건을 입력하면 반복 시작일부터 반복 종료월 마지막 날까지 해당 요일의 예약 회차를 생성한다.
 
 - **REQ-REC-201-default-weekday** — 반복 요일은 예약 시작일의 요일을 기본값으로 사용한다.
 
 - **REQ-REC-200-preview-count** — 반복 예약 생성 전 시스템은 생성 예정 회차 수를 표시한다.
+
+- **REQ-REC-200-preview-occurrences** — 반복 예약 생성 전 시스템은 실제 생성 예정 날짜 목록을 표시한다.
 
 - **REQ-REC-200-preview-conflicts** — 반복 예약 생성 전 시스템은 기존 ACTIVE 예약과 시간이 겹치는 날짜를 표시한다.
 
@@ -99,11 +107,11 @@
 
 - **REQ-REC-400-title-required** — 반복 예약 제목이 없으면 반복 예약을 생성하지 않는다.
 
-- **REQ-REC-400-end-condition-required** — 반복 종료일과 반복 횟수가 모두 없으면 반복 예약을 생성하지 않는다.
+- **REQ-REC-400-end-month-required** — 반복 종료월이 없으면 반복 예약을 생성하지 않는다.
 
-- **REQ-REC-400-end-date-before-start** — 반복 종료일이 반복 시작일보다 빠르면 반복 예약을 생성하지 않는다.
+- **REQ-REC-400-end-month-format** — 반복 종료월이 `YYYY-MM` 형식이 아니면 반복 예약을 생성하지 않는다.
 
-- **REQ-REC-400-repeat-count-range** — 반복 횟수가 1보다 작으면 반복 예약을 생성하지 않는다.
+- **REQ-REC-400-end-month-before-start** — 반복 종료월이 반복 시작일의 월보다 빠르면 반복 예약을 생성하지 않는다.
 
 - **REQ-REC-400-weekday-mismatch** — 반복 시작일과 반복 요일이 불일치하는 경우에는 사용자 확인 또는 자동 보정 정책이 필요하다. MVP에서는 예약 시작일의 요일을 반복 요일로 사용한다.
 
@@ -147,9 +155,9 @@
 
 - **REQ-UI-REC-001-checkbox** — 예약 생성 화면에는 `주간 반복 예약` 체크박스를 표시한다.
 
-- **REQ-UI-REC-002-repeat-fields** — 체크박스를 선택하면 반복 요일, 반복 종료일 또는 반복 횟수 입력 영역을 표시한다.
+- **REQ-UI-REC-002-repeat-fields** — 체크박스를 선택하면 반복 요일과 반복 종료월 입력 영역을 표시한다.
 
-- **REQ-UI-REC-003-preview** — 반복 예약 생성 전 예상 생성 건수와 충돌 날짜를 표시한다.
+- **REQ-UI-REC-003-preview** — 반복 예약 생성 전 예상 생성 건수, 생성 예정 날짜, 충돌 날짜를 표시한다.
 
 - **REQ-UI-REC-004-capacity-warning** — 반복 예약의 참석 인원이 권고 정원을 초과하면 경고를 표시한다.
 
@@ -178,8 +186,7 @@
 | repeat_type | 반복 유형. MVP에서는 WEEKLY |
 | repeat_weekday | 반복 요일 |
 | repeat_start_date | 반복 시작일 |
-| repeat_end_date | 반복 종료일 |
-| repeat_count | 반복 횟수 |
+| repeat_end_month | 반복 종료월. `YYYY-MM` 형식 |
 | occurrence_date | 개별 회차 예약일 |
 
 MVP 추천 방향은 다음과 같다.
@@ -193,9 +200,9 @@ MVP 추천 방향은 다음과 같다.
 | 코드 후보 | 메시지 후보 | 발생 조건 |
 |---|---|---|
 | ERR_REC_TITLE_REQUIRED | 반복 예약 제목을 입력하세요. | 제목 누락 |
-| ERR_REC_END_CONDITION_REQUIRED | 반복 종료일 또는 반복 횟수를 입력하세요. | 종료 조건 누락 |
-| ERR_REC_END_DATE_BEFORE_START | 반복 종료일은 시작일보다 빠를 수 없습니다. | 종료일 오류 |
-| ERR_REC_COUNT_RANGE | 반복 횟수는 1회 이상이어야 합니다. | 반복 횟수 오류 |
+| ERR_REC_END_MONTH_REQUIRED | 반복 종료월을 입력하세요. | 종료월 누락 |
+| ERR_REC_END_MONTH_FORMAT | 반복 종료월은 YYYY-MM 형식이어야 합니다. | 종료월 형식 오류 |
+| ERR_REC_END_MONTH_BEFORE_START | 반복 종료월은 시작월보다 빠를 수 없습니다. | 종료월 오류 |
 | ERR_REC_TITLE_CONFIRM_MISMATCH | 입력한 제목이 반복 예약 제목과 일치하지 않습니다. | 수정/취소 확인 실패 |
 | WARN_REC_CONFLICT_DATES | 일부 날짜에 기존 예약과 시간이 겹칩니다. | 충돌 날짜 존재 |
 
@@ -207,8 +214,11 @@ MVP 추천 방향은 다음과 같다.
 |---|---|---|
 | REQ-REC-201-create-weekly | `reservation-weekly-recurring.feature` | 주간 반복 예약 생성 |
 | REQ-REC-200-preview-count | `reservation-weekly-recurring.feature` | 생성 예정 건수 표시 |
+| REQ-REC-200-preview-occurrences | `reservation-weekly-recurring.feature` | 생성 예정 날짜 표시 |
 | REQ-REC-200-preview-conflicts | `reservation-weekly-recurring.feature` | 충돌 날짜 표시 |
 | REQ-REC-400-title-required | `reservation-weekly-recurring.feature` | 반복 제목 필수 |
+| REQ-REC-400-end-month-required | `reservation-weekly-recurring.feature` | 반복 종료월 필수 |
+| REQ-REC-400-end-month-format | `reservation-weekly-recurring.feature` | 반복 종료월 형식 |
 | REQ-REC-400-update-title-confirm-mismatch | `reservation-weekly-recurring.feature` | 수정 제목 확인 실패 |
 | REQ-REC-400-cancel-title-confirm-mismatch | `reservation-weekly-recurring.feature` | 취소 제목 확인 실패 |
 | REQ-UI-REC-001-checkbox | `vue-weekly-recurring-reservation.feature` | 체크박스 표시 |
@@ -224,7 +234,7 @@ MVP 추천 방향은 다음과 같다.
 | 1회차만 수정 | 포함 / 제외 | 후보 |
 | 1회차만 취소 | 포함 / 제외 | 후보 |
 | 과거 회차 수정 | 허용 / 금지 | 금지 추천 |
-| 반복 종료 조건 | 종료일 / 횟수 / 둘 다 | 둘 중 하나 입력 추천 |
+| 종료월 마지막 주 처리 | 종료월 마지막 날 이하 해당 요일까지 생성 | 확정 |
 | 반복 규칙 저장 방식 | 규칙 테이블 / 예약 테이블 확장 | SDD 단계 확정 |
 
 ---
