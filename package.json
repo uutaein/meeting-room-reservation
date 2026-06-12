@@ -13,7 +13,8 @@
     "test:bdd:overlap": "cucumber-js features/**/*.feature --tags \"@REQ-RSV-409-overlap or @REQ-RSV-409-overlap-same-time or @REQ-RSV-201-overlap-boundary-end-start or @REQ-RSV-201-overlap-different-room\" --require features/**/*.js --format progress",
     "test:bdd:list": "cucumber-js features/**/*.feature --tags \"@REQ-RSV-301-list-by-date or @REQ-RSV-301-list-empty or @REQ-RSV-400-list-date-required or @REQ-RSV-400-list-date-format\" --require features/**/*.js --format progress",
     "test:bdd:cancel": "cucumber-js features/**/*.feature --tags \"@REQ-RSV-204-cancel or @REQ-RSV-404-cancel-not-found or @REQ-RSV-409-cancel-already-cancelled or @REQ-RSV-201-after-cancel-rebook\" --require features/**/*.js --format progress",
-    "test:bdd:update": "cucumber-js features/**/*.feature --tags \"@REQ-RSV-UPDATE\" --require features/**/*.js --format progress"
+    "test:bdd:update": "cucumber-js features/**/*.feature --tags \"@REQ-RSV-UPDATE\" --require features/**/*.js --format progress",
+    "test:bdd": "cucumber-js features/**/*.feature --tags \"not @REQ-UI\" --require features/**/*.js --format progress"
   },
   "devDependencies": {
     "@cucumber/cucumber": "^12.9.0",
