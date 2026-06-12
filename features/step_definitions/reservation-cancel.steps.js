@@ -18,7 +18,8 @@ Given("다음 예약이 등록되어 있다", async function (dataTable) {
       endTime: row.endTime,
       ownerName: row.ownerName,
       attendees: Number(row.attendees),
-      purpose: row.purpose
+      purpose: row.purpose,
+      contact: row.contact || "010-1234-5678"
     })
   });
 
@@ -63,7 +64,8 @@ Given("취소된 예약이 존재한다", async function () {
       endTime: "11:00",
       ownerName: "김태인",
       attendees: 4,
-      purpose: "회의준비"
+      purpose: "회의준비",
+      contact: "010-1234-5678"
     })
   });
 
@@ -127,7 +129,8 @@ When("사용자가 같은 회의실과 같은 시간으로 다시 예약하면",
       endTime: row.endTime,
       ownerName: row.ownerName,
       attendees: Number(row.attendees),
-      purpose: row.purpose
+      purpose: row.purpose,
+      contact: row.contact || "010-1234-5678"
     })
   });
 

@@ -38,6 +38,7 @@
 
           <div class="reservation-content">
             <div class="reservation-title" :title="reservation.purpose">
+              <span v-if="reservation.recurringGroupId" class="recurring-badge">반복</span>
               {{ reservation.purpose }}
             </div>
 
@@ -62,8 +63,8 @@
             <button
               type="button"
               class="edit-button"
-              :disabled="loading || submitting || reservation.isPreview"
-              :title="reservation.isPreview ? '가상 데이터입니다.' : ''"
+              :disabled="loading || submitting || reservation.isPreview || !!reservation.recurringGroupId"
+              :title="reservation.isPreview ? '가상 데이터입니다.' : (reservation.recurringGroupId ? '반복 예약은 수정할 수 없습니다.' : '')"
               @click="$emit('edit-reservation', day, reservation)"
             >
               수정
@@ -562,5 +563,16 @@ function formatDateFriendly(dateStr) {
     grid-column: 3;
     grid-row: 1 / span 2;
   }
+}
+.recurring-badge {
+  display: inline-block;
+  padding: 2px 6px;
+  background: #2563eb;
+  color: #ffffff;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 800;
+  margin-right: 6px;
+  vertical-align: middle;
 }
 </style>

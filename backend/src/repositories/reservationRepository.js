@@ -13,7 +13,13 @@ export function saveReservation(input) {
       attendees,
       purpose,
       contact,
-      status
+      status,
+      recurring_group_id,
+      recurring_title,
+      repeat_type,
+      repeat_weekday,
+      repeat_start_date,
+      repeat_end_month
     )
     VALUES (
       @roomId,
@@ -24,7 +30,13 @@ export function saveReservation(input) {
       @attendees,
       @purpose,
       @contact,
-      'ACTIVE'
+      'ACTIVE',
+      @recurringGroupId,
+      @recurringTitle,
+      @repeatType,
+      @repeatWeekday,
+      @repeatStartDate,
+      @repeatEndMonth
     )
   `);
 
@@ -36,7 +48,13 @@ export function saveReservation(input) {
     ownerName: input.ownerName,
     attendees: input.attendees,
     purpose: input.purpose,
-    contact: input.contact || ""
+    contact: input.contact || "",
+    recurringGroupId: input.recurringGroupId || null,
+    recurringTitle: input.recurringTitle || null,
+    repeatType: input.repeatType || null,
+    repeatWeekday: input.repeatWeekday || null,
+    repeatStartDate: input.repeatStartDate || null,
+    repeatEndMonth: input.repeatEndMonth || null
   });
 
   return findReservationById(result.lastInsertRowid);
@@ -74,6 +92,12 @@ export function findReservationById(id) {
         purpose,
         contact,
         status,
+        recurring_group_id,
+        recurring_title,
+        repeat_type,
+        repeat_weekday,
+        repeat_start_date,
+        repeat_end_month,
         created_at,
         updated_at
       FROM reservations
@@ -100,6 +124,12 @@ function toReservation(row) {
     purpose: row.purpose,
     contact: row.contact,
     status: row.status,
+    recurringGroupId: row.recurring_group_id,
+    recurringTitle: row.recurring_title,
+    repeatType: row.repeat_type,
+    repeatWeekday: row.repeat_weekday,
+    repeatStartDate: row.repeat_start_date,
+    repeatEndMonth: row.repeat_end_month,
     createdAt: row.created_at,
     updatedAt: row.updated_at
   };
@@ -142,7 +172,13 @@ export function findReservationsByDate(date) {
       attendees,
       purpose,
       contact,
-      status
+      status,
+      recurring_group_id AS recurringGroupId,
+      recurring_title AS recurringTitle,
+      repeat_type AS repeatType,
+      repeat_weekday AS repeatWeekday,
+      repeat_start_date AS repeatStartDate,
+      repeat_end_month AS repeatEndMonth
     FROM reservations
     WHERE reservation_date = ?
       AND status = 'ACTIVE'
@@ -245,3 +281,100 @@ export function existsOverlappingReservationExceptSelf(id, input) {
 
   return Boolean(row);
 }
+
+export function findReservationsByGroupId(groupId) {
+  const db = getDb();
+  const rows = db
+    .prepare(`
+      SELECT
+        id,
+        room_id,
+        reservation_date,
+        start_time,
+        end_time,
+        owner_name,
+        attendees,
+        purpose,
+        contact,
+        status,
+        recurring_group_id,
+        recurring_title,
+        repeat_type,
+        repeat_weekday,
+        repeat_start_date,
+        repeat_end_month,
+        created_at,
+        updated_at
+      FROM reservations
+      WHERE recurring_group_id = ?
+      ORDER BY reservation_date ASC
+    `)
+    .all(groupId);
+
+  return rows.map(toReservation);
+}
+
+export function updateRecurringReservations(groupId, startDate, input) {
+  const db = getDb();
+  
+  // 트랜잭션 내부에서 개별 업데이트할 수도 있지만, repository 레벨은 단순 쿼리 실행을 지원함.
+  // 서비스 레벨에서 트랜잭션을 켜고 여러 번 호출하거나, 여기서 한 번에 업데이트.
+  // 이 날짜 이후의 해당 그룹 예약 목록 조회
+  const rows = db
+    .prepare(`
+      SELECT id, reservation_date
+      FROM reservations
+      WHERE recurring_group_id = ?
+        AND reservation_date >= ?
+        AND status = 'ACTIVE'
+    `)
+    .all(groupId, startDate);
+
+  const stmt = db.prepare(`
+    UPDATE reservations
+    SET
+      room_id = ?,
+      start_time = ?,
+      end_time = ?,
+      owner_name = ?,
+      attendees = ?,
+      purpose = ?,
+      contact = ?,
+      updated_at = CURRENT_TIMESTAMP
+    WHERE id = ?
+  `);
+
+  for (const row of rows) {
+    stmt.run(
+      input.roomId,
+      input.startTime,
+      input.endTime,
+      input.ownerName,
+      input.attendees,
+      input.purpose,
+      input.contact || "",
+      row.id
+    );
+  }
+
+  return rows.length;
+}
+
+export function cancelRecurringReservations(groupId, startDate) {
+  const db = getDb();
+  
+  const result = db
+    .prepare(`
+      UPDATE reservations
+      SET
+        status = 'CANCELLED',
+        updated_at = CURRENT_TIMESTAMP
+      WHERE recurring_group_id = ?
+        AND reservation_date >= ?
+        AND status = 'ACTIVE'
+    `)
+    .run(groupId, startDate);
+
+  return result.changes;
+}
+

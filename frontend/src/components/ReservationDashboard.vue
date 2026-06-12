@@ -78,6 +78,23 @@
           {{ cancelConfirmMessage }}
         </p>
 
+        <div class="recurring-confirm-content">
+          <p class="guide-text">
+            이 예약을 취소하려면 회의목적 <strong class="target-title">{{ cancelTarget?.reservation?.purpose }}</strong>{{ getPostposition(cancelTarget?.reservation?.purpose, 'objective') }} 입력하세요.
+          </p>
+          
+          <div class="form-field">
+            <input
+              id="cancel-purpose-confirm"
+              v-model="cancelPurposeInput"
+              type="text"
+              placeholder="회의목적 입력"
+              :disabled="submitting"
+              class="confirm-input"
+            />
+          </div>
+        </div>
+
         <div class="cancel-confirm-actions">
           <button
             class="secondary-button"
@@ -89,9 +106,10 @@
           </button>
 
           <button
+            id="cancel-confirm-submit"
             class="danger-button"
             type="button"
-            :disabled="submitting"
+            :disabled="submitting || cancelPurposeInput !== (cancelTarget?.reservation?.purpose || '')"
             @click="confirmCancelReservation"
           >
             {{ submitting ? "취소 중..." : "예, 취소할게요" }}
@@ -99,6 +117,75 @@
         </div>
       </section>
     </div>
+
+    <!-- 반복 예약 일괄 작업 확인 모달 -->
+    <div
+      v-if="isRecurringConfirmOpen"
+      class="cancel-confirm-backdrop"
+      @click.self="closeRecurringConfirm"
+    >
+      <section class="cancel-confirm-modal" role="dialog" aria-modal="true" aria-label="반복 예약 일괄 처리 확인">
+        <header class="cancel-confirm-header">
+          <h2>반복 예약 일괄 {{ recurringConfirmAction === 'update' ? '수정' : '취소' }}</h2>
+          <button
+            class="cancel-confirm-close"
+            type="button"
+            :disabled="submitting"
+            @click="closeRecurringConfirm"
+          >
+            ×
+          </button>
+        </header>
+
+        <div class="recurring-confirm-content">
+          <p class="affected-info">
+            영향받는 예약 건수: <strong>{{ affectedCount }}건</strong><br />
+            날짜 범위: <strong>{{ affectedRange }}</strong>
+          </p>
+          
+          <p class="guide-text">
+            이 예약을 취소하려면 회의목적 <strong class="target-title">{{ recurringConfirmPurpose }}</strong>{{ getPostposition(recurringConfirmPurpose, 'objective') }} 입력하세요.
+          </p>
+          
+          <div class="form-field">
+            <input
+              id="recurring-title-confirm"
+              v-model="recurringConfirmInput"
+              type="text"
+              placeholder="회의목적 입력"
+              :disabled="submitting"
+              class="confirm-input"
+            />
+          </div>
+          
+          <p v-if="recurringConfirmError" class="error-text">
+            {{ recurringConfirmError }}
+          </p>
+        </div>
+
+        <div class="cancel-confirm-actions">
+          <button
+            class="secondary-button"
+            type="button"
+            :disabled="submitting"
+            @click="closeRecurringConfirm"
+          >
+            취소
+          </button>
+
+          <button
+            id="recurring-confirm-submit"
+            :class="['danger-button', { 'update-confirm-button': recurringConfirmAction === 'update' }]"
+            type="button"
+            :disabled="submitting || recurringConfirmInput !== recurringConfirmPurpose"
+            @click="submitRecurringConfirm"
+          >
+            {{ submitting ? "처리 중..." : (recurringConfirmAction === 'update' ? "수정 진행" : "취소 진행") }}
+          </button>
+        </div>
+      </section>
+    </div>
+
 
     <transition name="toast-fade">
       <div v-if="toastMessage" class="toast" :class="`toast-${toastType}`">
@@ -114,7 +201,11 @@ import {
   createReservation,
   fetchReservationsByDate,
   cancelReservation,
-  updateReservation
+  updateReservation,
+  createRecurringReservation,
+  updateRecurringReservation,
+  cancelRecurringReservation,
+  fetchRecurringReservations
 } from "../api/reservationApi.js";
 import ReservationFilter from "./ReservationFilter.vue";
 import ReservationDayList from "./ReservationDayList.vue";
@@ -139,6 +230,7 @@ const isUpdateModalOpen = ref(false);
 const selectedReservation = ref(null);
 const isCancelConfirmOpen = ref(false);
 const cancelTarget = ref(null);
+const cancelPurposeInput = ref("");
 const toastMessage = ref("");
 const toastType = ref("success");
 const wakeLockActive = ref(false);
@@ -148,6 +240,19 @@ let dateRolloverTimer = null;
 let isRefreshingReservations = false;
 let isDashboardMounted = false;
 let wakeLockSentinel = null;
+
+// recurring reservation confirm modal states
+const isRecurringConfirmOpen = ref(false);
+const recurringConfirmAction = ref("update");
+const recurringConfirmTitle = ref("");
+const recurringConfirmPurpose = ref("");
+const recurringConfirmInput = ref("");
+const affectedCount = ref(0);
+const affectedRange = ref("");
+const recurringConfirmGroupId = ref("");
+const recurringConfirmStartDate = ref("");
+const recurringConfirmPayload = ref(null);
+const recurringConfirmError = ref("");
 
 const periodRangeText = computed(() => {
   if (dailyReservations.value.length === 0) {
@@ -219,6 +324,7 @@ function closeCreateModal() {
 }
 
 function openUpdateModal(day, reservation) {
+  if (reservation.recurringGroupId) return;
   updateErrorMessage.value = "";
   selectedReservation.value = { ...reservation, reservationDate: day.date };
   isUpdateModalOpen.value = true;
@@ -231,17 +337,51 @@ function closeUpdateModal() {
   isUpdateModalOpen.value = false;
 }
 
-function openCancelConfirm(day, reservation) {
+async function openCancelConfirm(day, reservation) {
   if (submitting.value) return;
   errorMessage.value = "";
-  cancelTarget.value = { day, reservation };
-  isCancelConfirmOpen.value = true;
+  cancelPurposeInput.value = "";
+
+  if (reservation.recurringGroupId) {
+    try {
+      const allReservations = await fetchRecurringReservations(reservation.recurringGroupId);
+      
+      // ACTIVE 상태인 전체 반복 예약 중 가장 빠른 날짜(첫 회차) 찾기
+      const sortedActiveReservations = allReservations
+        .filter(r => r.status === "ACTIVE")
+        .sort((a, b) => a.reservationDate.localeCompare(b.reservationDate));
+      
+      const minStartDate = sortedActiveReservations.length > 0 
+        ? sortedActiveReservations[0].reservationDate 
+        : day.date;
+
+      const info = getAffectedRecurringInfo(allReservations, minStartDate);
+      
+      recurringConfirmAction.value = "cancel";
+      recurringConfirmTitle.value = reservation.recurringTitle || "";
+      recurringConfirmPurpose.value = reservation.purpose || "";
+      recurringConfirmInput.value = "";
+      affectedCount.value = info.count;
+      affectedRange.value = info.range;
+      recurringConfirmGroupId.value = reservation.recurringGroupId;
+      recurringConfirmStartDate.value = minStartDate;
+      recurringConfirmPayload.value = null;
+      recurringConfirmError.value = "";
+      isRecurringConfirmOpen.value = true;
+    } catch (error) {
+      showToast("반복 예약을 조회하는 데 실패했습니다.", "error");
+    }
+  } else {
+    cancelTarget.value = { day, reservation };
+    isCancelConfirmOpen.value = true;
+  }
 }
 
 function closeCancelConfirm() {
   if (submitting.value) return;
   isCancelConfirmOpen.value = false;
   cancelTarget.value = null;
+  cancelPurposeInput.value = "";
 }
 
 async function handleCreateSubmit(formData) {
@@ -249,10 +389,18 @@ async function handleCreateSubmit(formData) {
   formErrorMessage.value = "";
 
   try {
-    await createReservation(formData);
-    showToast("예약이 등록되었습니다.");
-    currentDateText.value = toDateInputValue(new Date());
-    baseDate.value = currentDateText.value;
+    const targetDate = formData.reservationDate || toDateInputValue(new Date());
+
+    if (formData.isRecurring) {
+      await createRecurringReservation(formData);
+      showToast("반복 예약이 등록되었습니다.");
+    } else {
+      await createReservation(formData);
+      showToast("예약이 등록되었습니다.");
+    }
+    
+    // 성공 시 대시보드 기준일(baseDate)을 예약 생성일/시작일로 이동
+    baseDate.value = targetDate;
     isCreateModalOpen.value = false;
     await loadReservations();
   } catch (error) {
@@ -263,19 +411,39 @@ async function handleCreateSubmit(formData) {
 }
 
 async function handleUpdateSubmit(id, formData) {
-  submitting.value = true;
-  updateErrorMessage.value = "";
-
-  try {
-    await updateReservation(id, formData);
-    showToast("예약이 변경되었습니다.");
+  if (selectedReservation.value && selectedReservation.value.recurringGroupId) {
     isUpdateModalOpen.value = false;
-    selectedReservation.value = null;
-    await loadReservations();
-  } catch (error) {
-    updateErrorMessage.value = error.message;
-  } finally {
-    submitting.value = false;
+    
+    const info = getAffectedRecurringInfo(
+      selectedReservation.value.recurringGroupId,
+      selectedReservation.value.reservationDate
+    );
+    
+    recurringConfirmAction.value = "update";
+    recurringConfirmTitle.value = selectedReservation.value.recurringTitle || "";
+    recurringConfirmInput.value = "";
+    affectedCount.value = info.count;
+    affectedRange.value = info.range;
+    recurringConfirmGroupId.value = selectedReservation.value.recurringGroupId;
+    recurringConfirmStartDate.value = selectedReservation.value.reservationDate;
+    recurringConfirmPayload.value = formData;
+    recurringConfirmError.value = "";
+    isRecurringConfirmOpen.value = true;
+  } else {
+    submitting.value = true;
+    updateErrorMessage.value = "";
+    try {
+      await updateReservation(id, formData);
+      showToast("예약이 변경되었습니다.");
+      isUpdateModalOpen.value = false;
+      selectedReservation.value = null;
+      await loadReservations();
+    } catch (error) {
+      updateErrorMessage.value = error.message;
+      isUpdateModalOpen.value = true;
+    } finally {
+      submitting.value = false;
+    }
   }
 }
 
@@ -299,6 +467,73 @@ async function confirmCancelReservation() {
   } finally {
     submitting.value = false;
   }
+}
+
+async function submitRecurringConfirm() {
+  submitting.value = true;
+  recurringConfirmError.value = "";
+
+  try {
+    if (recurringConfirmAction.value === "update") {
+      await updateRecurringReservation(recurringConfirmGroupId.value, {
+        titleConfirm: recurringConfirmTitle.value,
+        startDate: recurringConfirmStartDate.value,
+        ...recurringConfirmPayload.value
+      });
+      showToast("반복 예약이 수정되었습니다.");
+    } else {
+      await cancelRecurringReservation(recurringConfirmGroupId.value, {
+        titleConfirm: recurringConfirmTitle.value,
+        startDate: recurringConfirmStartDate.value
+      });
+      showToast("반복 예약이 취소되었습니다.");
+    }
+
+    isRecurringConfirmOpen.value = false;
+    selectedReservation.value = null;
+    recurringConfirmPayload.value = null;
+    recurringConfirmPurpose.value = "";
+    await loadReservations();
+  } catch (error) {
+    recurringConfirmError.value = error.message;
+  } finally {
+    submitting.value = false;
+  }
+}
+
+function closeRecurringConfirm() {
+  if (submitting.value) return;
+  isRecurringConfirmOpen.value = false;
+  selectedReservation.value = null;
+  recurringConfirmPayload.value = null;
+  recurringConfirmPurpose.value = "";
+}
+
+const getAffectedRecurringInfo = (allReservations, startDate) => {
+  const matches = [];
+  for (const res of allReservations) {
+    if (res.reservationDate >= startDate && res.status === "ACTIVE") {
+      matches.push(res.reservationDate);
+    }
+  }
+  matches.sort();
+  return {
+    count: matches.length,
+    range: matches.length > 0 ? `${matches[0]} ~ ${matches[matches.length - 1]}` : ""
+  };
+};
+
+function getPostposition(word, postpositionType) {
+  if (!word) return "";
+  const lastChar = word.charCodeAt(word.length - 1);
+  if (lastChar < 0xac00 || lastChar > 0xd7a3) {
+    return postpositionType === "objective" ? "을" : "이";
+  }
+  const hasBatchim = (lastChar - 0xac00) % 28 > 0;
+  if (postpositionType === "objective") {
+    return hasBatchim ? "을" : "를";
+  }
+  return hasBatchim ? "이" : "가";
 }
 
 async function loadReservations({ silent = false } = {}) {
@@ -743,4 +978,68 @@ function showToast(message, type = "success") {
   opacity: 0;
   transform: translateX(-50%) translateY(-8px);
 }
+.recurring-confirm-content {
+  margin: 14px 0;
+  text-align: left;
+}
+
+.affected-info {
+  background: hsla(260, 20%, 95%, 0.05);
+  border: 1px solid var(--border);
+  padding: 10px 12px;
+  border-radius: 8px;
+  font-size: 14px;
+  color: var(--text);
+  line-height: 1.5;
+}
+
+.guide-text {
+  font-size: 14px;
+  color: var(--text);
+  margin: 12px 0;
+}
+
+.target-title {
+  color: #2563eb;
+  background: hsla(220, 90%, 55%, 0.08);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-weight: 800;
+}
+
+.confirm-input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 10px 12px;
+  font-size: 16px;
+  border: 2px solid var(--border);
+  border-radius: 8px;
+  outline: none;
+  background: var(--bg);
+  color: var(--text-h);
+}
+
+.confirm-input:focus {
+  border-color: var(--accent);
+}
+
+.error-text {
+  color: hsl(0, 80%, 50%);
+  font-size: 14px;
+  font-weight: 700;
+  margin-top: 8px;
+  text-align: center;
+}
+
+.update-confirm-button {
+  background: #2563eb;
+  border: 1px solid #2563eb;
+}
+
+.update-confirm-button:hover:not(:disabled) {
+  background: #1d4ed8;
+  border-color: #1d4ed8;
+  box-shadow: 0 8px 18px rgba(37, 99, 235, 0.28);
+}
 </style>
+

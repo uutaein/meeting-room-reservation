@@ -168,6 +168,19 @@ Then("수정된 예약 정보가 반환된다", function () {
   assert.equal(reservation.status, "ACTIVE");
 });
 
+Then("수정 후 참석 인원 7명이 반환된다", function () {
+  const reservation = getReservationFromBody(responseBody);
+
+  assert.equal(reservation.roomId, "ROOM_1");
+  assert.equal(reservation.reservationDate, "2026-06-15");
+  assert.equal(reservation.startTime, "10:00");
+  assert.equal(reservation.endTime, "11:00");
+  assert.equal(reservation.ownerName, "김태인");
+  assert.equal(reservation.attendees, 7);
+  assert.equal(reservation.purpose, "정원 초과 수정");
+  assert.equal(reservation.status, "ACTIVE");
+});
+
 Then("수정된 목적이 반환된다", function () {
   const reservation = getReservationFromBody(responseBody);
 
@@ -201,12 +214,16 @@ Then("수정된 시간이 반환된다", function () {
 });
 
 async function createReservation(input) {
+  const payload = {
+    contact: "010-1234-5678",
+    ...input
+  };
   const createResponse = await fetch(`${API_BASE_URL}/reservations`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json"
     },
-    body: JSON.stringify(input)
+    body: JSON.stringify(payload)
   });
 
   const body = await createResponse.json();
@@ -221,12 +238,16 @@ async function createReservation(input) {
 }
 
 async function updateReservation(id, input) {
+  const payload = {
+    contact: "010-1234-5678",
+    ...input
+  };
   response = await fetch(`${API_BASE_URL}/reservations/${id}`, {
     method: "PUT",
     headers: {
       "Content-Type": "application/json"
     },
-    body: JSON.stringify(input)
+    body: JSON.stringify(payload)
   });
 
   responseBody = await response.json();

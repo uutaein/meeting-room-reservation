@@ -74,7 +74,8 @@ Given(
       endTime: `${pad(endHour)}:${pad(endMinute)}`,
       ownerName: "기존자",
       attendees: 2,
-      purpose: "기존예약"
+      purpose: "기존예약",
+      contact: "010-1234-5678"
     };
 
     const response = await fetch(`${API_BASE_URL}/reservations`, {
@@ -107,7 +108,8 @@ When("사용자가 아래 정보로 예약을 생성한다", async function (dat
     endTime: input["종료시간"],
     ownerName: input["예약자명"],
     attendees: Number(input["참석인원"]),
-    purpose: input["회의목적"]
+    purpose: input["회의목적"],
+    contact: input["연락처"] || "010-1234-5678"
   };
 
   this.requestBody = requestBody;

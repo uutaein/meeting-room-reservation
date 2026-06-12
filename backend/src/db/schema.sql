@@ -18,6 +18,12 @@ CREATE TABLE IF NOT EXISTS reservations (
   purpose TEXT NOT NULL,
   contact TEXT,
   status TEXT NOT NULL DEFAULT 'ACTIVE',
+  recurring_group_id TEXT,
+  recurring_title TEXT,
+  repeat_type TEXT,
+  repeat_weekday TEXT,
+  repeat_start_date TEXT,
+  repeat_end_month TEXT,
   created_at TEXT NOT NULL DEFAULT (datetime('now')),
   updated_at TEXT NOT NULL DEFAULT (datetime('now')),
 
