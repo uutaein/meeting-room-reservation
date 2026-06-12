@@ -1,6 +1,7 @@
 import {
   validateCreateReservation,
-  validateListReservationQuery
+  validateListReservationQuery,
+  validateCreateRecurringReservation
 } from "../validators/reservationValidator.js";
 
 import {
@@ -11,8 +12,13 @@ import {
   findReservationById,
   cancelReservationById,
   updateReservationById,
-  existsOverlappingReservationExceptSelf
+  existsOverlappingReservationExceptSelf,
+  updateRecurringReservations,
+  cancelRecurringReservations,
+  findReservationsByGroupId
 } from "../repositories/reservationRepository.js";
+
+import { getDb } from "../db/connection.js";
 
 export function createReservation(input) {
   validateCreateReservation(input);
@@ -122,3 +128,205 @@ export function updateReservation(id, input) {
 
   return updateReservationById(id, input);
 }
+
+export function previewRecurring(input) {
+  validateCreateRecurringReservation(input);
+  validateRoomExists(input.roomId);
+
+  const dates = getRecurringDates(input.reservationDate, input.endMonth);
+  const conflicts = [];
+  const occurrences = [];
+
+  for (const date of dates) {
+    const singleInput = {
+      roomId: input.roomId,
+      reservationDate: date,
+      startTime: input.startTime,
+      endTime: input.endTime
+    };
+    if (existsOverlappingReservation(singleInput)) {
+      conflicts.push(date);
+    } else {
+      occurrences.push(date);
+    }
+  }
+
+  return {
+    totalCount: dates.length,
+    occurrences: dates,
+    conflicts: conflicts,
+    availableCount: occurrences.length
+  };
+}
+
+export function createRecurringReservation(input) {
+  validateCreateRecurringReservation(input);
+  validateRoomExists(input.roomId);
+
+  const dates = getRecurringDates(input.reservationDate, input.endMonth);
+  const conflicts = [];
+  const occurrences = [];
+
+  for (const date of dates) {
+    const singleInput = {
+      roomId: input.roomId,
+      reservationDate: date,
+      startTime: input.startTime,
+      endTime: input.endTime
+    };
+    if (existsOverlappingReservation(singleInput)) {
+      conflicts.push(date);
+    } else {
+      occurrences.push(date);
+    }
+  }
+
+  if (!input.createAvailableOnly && conflicts.length > 0) {
+    throwProblem(
+      409,
+      "ERR_RESERVATION_OVERLAP",
+      "같은 회의실에 겹치는 예약이 이미 존재합니다."
+    );
+  }
+
+  if (occurrences.length === 0) {
+    throwProblem(
+      409,
+      "ERR_RESERVATION_OVERLAP",
+      "같은 회의실에 겹치는 예약이 이미 존재합니다."
+    );
+  }
+
+  const db = getDb();
+  const createdReservations = [];
+
+  const runInsertTransaction = db.transaction(() => {
+    const groupId = `group_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    const dayNames = ["일요일", "월요일", "화요일", "수요일", "목요일", "금요일", "토요일"];
+    
+    const [startYear, startMonth, startDay] = input.reservationDate.split("-").map(Number);
+    const startDateObj = new Date(startYear, startMonth - 1, startDay);
+    const repeatWeekday = dayNames[startDateObj.getDay()];
+
+    for (const date of occurrences) {
+      const singleReservationInput = {
+        roomId: input.roomId,
+        reservationDate: date,
+        startTime: input.startTime,
+        endTime: input.endTime,
+        ownerName: input.ownerName,
+        attendees: Number(input.attendees),
+        purpose: input.purpose,
+        contact: input.contact,
+        recurringGroupId: groupId,
+        recurringTitle: input.recurringTitle,
+        repeatType: "WEEKLY",
+        repeatWeekday: repeatWeekday,
+        repeatStartDate: input.reservationDate,
+        repeatEndMonth: input.endMonth
+      };
+      const created = saveReservation(singleReservationInput);
+      createdReservations.push(created);
+    }
+  });
+
+  runInsertTransaction();
+
+  return createdReservations;
+}
+
+export function updateRecurring(groupId, input) {
+  const existing = findReservationsByGroupId(groupId);
+  if (!existing || existing.length === 0) {
+    throwProblem(404, "ERR_RESERVATION_NOT_FOUND", "예약을 찾을 수 없습니다.");
+  }
+
+  const firstReservation = existing[0];
+  if (firstReservation.recurringTitle !== input.titleConfirm) {
+    throwProblem(400, "ERR_REC_TITLE_CONFIRM_MISMATCH", "입력한 제목이 반복 예약 제목과 일치하지 않습니다.");
+  }
+
+  const tempInput = {
+    roomId: input.roomId,
+    reservationDate: input.startDate || firstReservation.reservationDate,
+    startTime: input.startTime,
+    endTime: input.endTime,
+    ownerName: input.ownerName,
+    attendees: input.attendees,
+    purpose: input.purpose,
+    contact: input.contact
+  };
+  validateCreateReservation(tempInput);
+  validateRoomExists(input.roomId);
+
+  const db = getDb();
+  let updatedCount = 0;
+
+  const runUpdateTransaction = db.transaction(() => {
+    const targetReservations = existing.filter(r => r.status === "ACTIVE" && r.reservationDate >= input.startDate);
+    
+    for (const r of targetReservations) {
+      const checkInput = {
+        roomId: input.roomId,
+        reservationDate: r.reservationDate,
+        startTime: input.startTime,
+        endTime: input.endTime
+      };
+      if (existsOverlappingReservationExceptSelf(r.id, checkInput)) {
+        throwProblem(409, "ERR_RESERVATION_OVERLAP", "이미 해당 시간에 예약이 존재합니다.");
+      }
+    }
+
+    updatedCount = updateRecurringReservations(groupId, input.startDate, input);
+  });
+
+  runUpdateTransaction();
+
+  return { updatedCount };
+}
+
+export function cancelRecurring(groupId, input) {
+  const existing = findReservationsByGroupId(groupId);
+  if (!existing || existing.length === 0) {
+    throwProblem(404, "ERR_RESERVATION_NOT_FOUND", "예약을 찾을 수 없습니다.");
+  }
+
+  const firstReservation = existing[0];
+  if (firstReservation.recurringTitle !== input.titleConfirm) {
+    throwProblem(400, "ERR_REC_TITLE_CONFIRM_MISMATCH", "입력한 제목이 반복 예약 제목과 일치하지 않습니다.");
+  }
+
+  const db = getDb();
+  let cancelledCount = 0;
+
+  const runCancelTransaction = db.transaction(() => {
+    cancelledCount = cancelRecurringReservations(groupId, input.startDate);
+  });
+
+  runCancelTransaction();
+
+  return { cancelledCount };
+}
+
+export function getRecurringDates(startDateStr, endMonthStr) {
+  const [startYear, startMonth, startDay] = startDateStr.split("-").map(Number);
+  const [endYear, endMonthNum] = endMonthStr.split("-").map(Number);
+
+  const startDate = new Date(startYear, startMonth - 1, startDay);
+  const endDate = new Date(endYear, endMonthNum, 0);
+
+  const dates = [];
+  const currentDate = new Date(startDate);
+
+  while (currentDate <= endDate) {
+    const yyyy = currentDate.getFullYear();
+    const mm = String(currentDate.getMonth() + 1).padStart(2, "0");
+    const dd = String(currentDate.getDate()).padStart(2, "0");
+    dates.push(`${yyyy}-${mm}-${dd}`);
+    
+    currentDate.setDate(currentDate.getDate() + 7);
+  }
+
+  return dates;
+}
+
