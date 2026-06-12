@@ -219,7 +219,7 @@ function validateContact(contact) {
   }
 }
 
-export function validateCreateRecurringReservation(input) {
+export function validateCreateRecurringReservation(input, isSubmit = true) {
   // 1. 반복 제목 필수 검증
   if (!input.recurringTitle || String(input.recurringTitle).trim() === "") {
     throwProblem(400, "ERR_REC_TITLE_REQUIRED", "반복 예약 제목을 입력하세요.");
@@ -246,16 +246,25 @@ export function validateCreateRecurringReservation(input) {
     throwProblem(400, "ERR_REC_END_MONTH_BEFORE_START", "반복 종료월은 시작월보다 빠를 수 없습니다.");
   }
 
-  const tempInput = {
-    roomId: input.roomId,
-    reservationDate: input.reservationDate,
-    startTime: input.startTime,
-    endTime: input.endTime,
-    ownerName: input.ownerName,
-    attendees: input.attendees,
-    purpose: input.purpose,
-    contact: input.contact
-  };
-  validateCreateReservation(tempInput);
+  if (isSubmit) {
+    const tempInput = {
+      roomId: input.roomId,
+      reservationDate: input.reservationDate,
+      startTime: input.startTime,
+      endTime: input.endTime,
+      ownerName: input.ownerName,
+      attendees: input.attendees,
+      purpose: input.purpose,
+      contact: input.contact
+    };
+    validateCreateReservation(tempInput);
+  } else {
+    // 미리보기 시 최소한의 룸/시간 포맷 및 정책 검증 진행
+    validateRoomId(input.roomId);
+    validateTimeFormat(input.startTime, input.endTime);
+    validateTimeOrder(input.startTime, input.endTime);
+    validateDuration(input.startTime, input.endTime);
+    validateBusinessHours(input.startTime, input.endTime);
+  }
 }
 

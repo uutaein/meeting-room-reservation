@@ -130,7 +130,7 @@ export function updateReservation(id, input) {
 }
 
 export function previewRecurring(input) {
-  validateCreateRecurringReservation(input);
+  validateCreateRecurringReservation(input, false);
   validateRoomExists(input.roomId);
 
   const dates = getRecurringDates(input.reservationDate, input.endMonth);
