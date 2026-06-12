@@ -37,8 +37,9 @@
           </div>
 
           <div class="reservation-content">
-            <div class="reservation-title" :title="reservation.purpose">
-              {{ reservation.purpose }}
+            <div class="reservation-title" :title="reservation.recurringTitle || reservation.purpose">
+              <span v-if="reservation.recurringGroupId" class="recurring-badge">반복</span>
+              {{ reservation.recurringTitle || reservation.purpose }}
             </div>
 
             <div class="reservation-meta">
@@ -562,5 +563,16 @@ function formatDateFriendly(dateStr) {
     grid-column: 3;
     grid-row: 1 / span 2;
   }
+}
+.recurring-badge {
+  display: inline-block;
+  padding: 2px 6px;
+  background: #2563eb;
+  color: #ffffff;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 800;
+  margin-right: 6px;
+  vertical-align: middle;
 }
 </style>

@@ -29,7 +29,7 @@
           </div>
 
           <div class="form-field">
-            <label for="reservation-date">예약일</label>
+            <label for="reservation-date">예약일 / 시작일</label>
             <div class="date-adjuster">
               <button type="button" class="adjust-btn" @click="adjustDate(-1)" :disabled="submitting">
                 하루 전
@@ -124,6 +124,101 @@
           />
         </div>
 
+        <!-- 주간 반복 예약 체크박스 -->
+        <div class="form-field checkbox-field">
+          <label class="checkbox-label">
+            <input
+              id="is-recurring"
+              v-model="isRecurring"
+              type="checkbox"
+              :disabled="submitting"
+            />
+            <span>주간 반복 예약으로 등록</span>
+          </label>
+        </div>
+
+        <!-- 주간 반복 예약 전용 입력 영역 -->
+        <div v-if="isRecurring" class="recurring-fields-container">
+          <div class="form-row">
+            <div class="form-field">
+              <label for="recurring-title">반복 예약 제목</label>
+              <input
+                id="recurring-title"
+                v-model.trim="form.recurringTitle"
+                type="text"
+                required
+                :disabled="submitting"
+                placeholder="예: 주간회의"
+              />
+            </div>
+            <div class="form-field">
+              <label>반복 요일</label>
+              <input
+                type="text"
+                :value="weekdayName"
+                disabled
+                class="readonly-input"
+              />
+            </div>
+            <div class="form-field">
+              <label for="end-month">반복 종료월</label>
+              <input
+                id="end-month"
+                v-model="form.endMonth"
+                type="month"
+                required
+                :disabled="submitting"
+              />
+            </div>
+          </div>
+
+          <!-- 충돌 및 가능한 날짜 미리보기 결과 영역 -->
+          <div v-if="recurringPreview" class="preview-box">
+            <h3>예약 미리보기 결과</h3>
+            <p>예상 생성 건수: <strong>{{ recurringPreview.totalCount }}건</strong></p>
+            
+            <div v-if="recurringPreview.conflicts.length > 0" class="conflict-alert">
+              <p class="warning-text">⚠️ 일부 날짜에 기존 예약과 시간이 겹칩니다.</p>
+              <ul>
+                <li v-for="d in recurringPreview.conflicts" :key="d" class="conflict-date">
+                  {{ d }} (충돌)
+                </li>
+              </ul>
+              
+              <label class="checkbox-label conflict-checkbox">
+                <input
+                  id="create-available-only"
+                  v-model="form.createAvailableOnly"
+                  type="checkbox"
+                  :disabled="submitting"
+                />
+                <span>겹치는 날짜를 제외하고 가능한 날짜만 생성합니다. ({{ recurringPreview.availableCount }}건)</span>
+              </label>
+            </div>
+            
+            <div v-else class="success-text">
+              ✨ 모든 회차가 예약 가능합니다!
+            </div>
+            
+            <div class="occurrences-list">
+              <h4>생성 예정 날짜 목록</h4>
+              <div class="date-tags">
+                <span
+                  v-for="d in recurringPreview.occurrences"
+                  :key="d"
+                  :class="['date-tag', { 'conflict-tag': recurringPreview.conflicts.includes(d) }]"
+                >
+                  {{ d }}
+                </span>
+              </div>
+            </div>
+          </div>
+          
+          <div v-if="previewError" class="error">
+            {{ previewError }}
+          </div>
+        </div>
+
         <p v-if="suggestionMessage" class="notice">
           {{ suggestionMessage }}
         </p>
@@ -156,8 +251,9 @@
 </template>
 
 <script setup>
-import { reactive, ref, watch } from "vue";
+import { reactive, ref, watch, computed } from "vue";
 import { getRoomSuggestionMessage } from "../utils/reservationWarnings.js";
+import { previewRecurringReservation } from "../api/reservationApi.js";
 
 const props = defineProps({
   isOpen: {
@@ -192,7 +288,22 @@ const form = reactive({
   ownerName: "",
   attendees: 1,
   purpose: "",
-  contact: ""
+  contact: "",
+  recurringTitle: "",
+  endMonth: "",
+  createAvailableOnly: false
+});
+
+const isRecurring = ref(false);
+const recurringPreview = ref(null);
+const previewError = ref("");
+
+const weekdayName = computed(() => {
+  if (!form.reservationDate) return "";
+  const [y, m, d] = form.reservationDate.split("-").map(Number);
+  const date = new Date(y, m - 1, d);
+  const dayNames = ["일요일", "월요일", "화요일", "수요일", "목요일", "금요일", "토요일"];
+  return dayNames[date.getDay()];
 });
 
 const hours = Array.from({ length: 13 }, (_, i) => String(i + 8).padStart(2, "0"));
@@ -222,11 +333,65 @@ watch(
   }
 );
 
+watch(isRecurring, (newVal) => {
+  if (!newVal) {
+    form.recurringTitle = "";
+    form.endMonth = "";
+    form.createAvailableOnly = false;
+    recurringPreview.value = null;
+    previewError.value = "";
+  } else {
+    form.recurringTitle = "주간회의";
+  }
+});
+
+watch(
+  () => [
+    isRecurring.value,
+    form.roomId,
+    form.reservationDate,
+    form.startTime,
+    form.endTime,
+    form.endMonth,
+    form.recurringTitle
+  ],
+  async () => {
+    if (!isRecurring.value || !form.reservationDate || !form.endMonth) {
+      recurringPreview.value = null;
+      previewError.value = "";
+      return;
+    }
+
+    if (!/^\d{4}-\d{2}$/.test(form.endMonth)) {
+      previewError.value = "반복 종료월은 YYYY-MM 형식이어야 합니다.";
+      recurringPreview.value = null;
+      return;
+    }
+
+    try {
+      const result = await previewRecurringReservation({
+        roomId: form.roomId,
+        recurringTitle: form.recurringTitle || "주간회의",
+        reservationDate: form.reservationDate,
+        startTime: form.startTime,
+        endTime: form.endTime,
+        endMonth: form.endMonth
+      });
+      recurringPreview.value = result;
+      previewError.value = "";
+    } catch (err) {
+      previewError.value = err.message;
+      recurringPreview.value = null;
+    }
+  }
+);
+
 watch(
   () => props.isOpen,
   (newVal) => {
     if (!newVal) return;
 
+    isRecurring.value = false;
     form.roomId = "ROOM_1";
     form.reservationDate = props.baseDate;
     form.startTime = "10:00";
@@ -239,9 +404,14 @@ watch(
     form.attendees = 1;
     form.purpose = "";
     form.contact = "";
+    form.recurringTitle = "";
+    form.endMonth = "";
+    form.createAvailableOnly = false;
     localError.value = "";
     suggestionMessage.value = "";
     confirmedWarning.value = false;
+    recurringPreview.value = null;
+    previewError.value = "";
   },
   { immediate: true }
 );
@@ -288,7 +458,7 @@ function handleSubmit() {
   localError.value = "";
   suggestionMessage.value = "";
   confirmedWarning.value = false;
-  emit("submit", { ...form });
+  emit("submit", { ...form, isRecurring: isRecurring.value });
 }
 </script>
 
@@ -419,6 +589,119 @@ function handleSubmit() {
 .form-field select:focus {
   border-color: var(--accent);
   box-shadow: 0 0 0 3px var(--accent-bg);
+}
+
+.checkbox-field {
+  margin: 10px 0;
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 700;
+  font-size: 18px;
+  color: var(--text-h);
+  cursor: pointer;
+}
+
+.checkbox-label input[type="checkbox"] {
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+}
+
+.recurring-fields-container {
+  border: 2px dashed var(--border);
+  border-radius: 16px;
+  padding: 20px;
+  background: hsla(260, 20%, 95%, 0.03);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.readonly-input {
+  background: var(--border) !important;
+  color: var(--text) !important;
+  cursor: not-allowed;
+}
+
+.preview-box {
+  margin-top: 12px;
+  padding: 16px;
+  background: hsla(260, 20%, 95%, 0.02);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+
+.preview-box h3 {
+  margin-top: 0;
+  margin-bottom: 12px;
+  font-size: 18px;
+  color: var(--text-h);
+}
+
+.conflict-alert {
+  padding: 12px;
+  background: hsla(0, 80%, 60%, 0.08);
+  border: 1px solid hsla(0, 80%, 60%, 0.2);
+  border-radius: 8px;
+  margin: 12px 0;
+}
+
+.warning-text {
+  color: hsl(0, 80%, 45%);
+  font-weight: 700;
+  margin: 0 0 8px 0;
+}
+
+.conflict-date {
+  color: hsl(0, 80%, 45%);
+  font-size: 14px;
+}
+
+.conflict-checkbox {
+  margin-top: 10px;
+  font-size: 15px;
+}
+
+.success-text {
+  color: hsl(140, 70%, 35%);
+  font-weight: 700;
+  margin: 12px 0;
+}
+
+.occurrences-list {
+  margin-top: 12px;
+}
+
+.occurrences-list h4 {
+  margin: 0 0 8px 0;
+  font-size: 15px;
+  color: var(--text);
+}
+
+.date-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.date-tag {
+  display: inline-block;
+  padding: 4px 8px;
+  border-radius: 6px;
+  background: var(--border);
+  color: var(--text-h);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.conflict-tag {
+  background: hsla(0, 80%, 60%, 0.2);
+  color: hsl(0, 80%, 40%);
+  text-decoration: line-through;
 }
 
 .notice {
@@ -559,3 +842,4 @@ function handleSubmit() {
   box-shadow: 0 0 0 3px var(--accent-bg);
 }
 </style>
+
