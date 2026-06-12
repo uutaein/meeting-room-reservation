@@ -469,14 +469,14 @@ async function submitRecurringConfirm() {
   try {
     if (recurringConfirmAction.value === "update") {
       await updateRecurringReservation(recurringConfirmGroupId.value, {
-        titleConfirm: recurringConfirmInput.value,
+        titleConfirm: recurringConfirmTitle.value,
         startDate: recurringConfirmStartDate.value,
         ...recurringConfirmPayload.value
       });
       showToast("반복 예약이 수정되었습니다.");
     } else {
       await cancelRecurringReservation(recurringConfirmGroupId.value, {
-        titleConfirm: recurringConfirmInput.value,
+        titleConfirm: recurringConfirmTitle.value,
         startDate: recurringConfirmStartDate.value
       });
       showToast("반복 예약이 취소되었습니다.");
